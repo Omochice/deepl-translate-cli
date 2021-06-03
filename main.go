@@ -161,9 +161,6 @@ func main() {
 			if err != nil {
 				return err
 			}
-			if c.NArg() < 1 && !c.Bool("stdin") {
-				return fmt.Errorf("the filename or --stdin option is needed.")
-			}
 
 			var rawSentense string
 			if c.Bool("stdin") {
@@ -180,6 +177,9 @@ func main() {
 				}
 
 			} else {
+				if c.NArg() == 0 {
+					return fmt.Errorf("No filename is set. And `--stdin` option is not set.\nEither must be set.")
+				}
 				f, err := os.Open(c.Args().First())
 				if err != nil {
 					return err
