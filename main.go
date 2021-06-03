@@ -8,12 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli/v2"
 )
 
 type Setting struct {
-	AuthKey    string
+	AuthKey    string `json:"-"`
 	SourceLang string `json:"source_lang"`
 	TargetLang string `json:"target_lang"`
 }
@@ -29,9 +30,21 @@ type Translation struct {
 
 func LoadSettings() (Setting, error) {
 	var setting Setting
-	bytes, err := ioutil.ReadFile(os.Getenv("HOME") + "/.config/deepl-translation/setting.json")
+
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return setting, err
+	}
+
+	configPath := filepath.Join(homeDir, ".config", "deepl-translation", "setting.json")
+	bytes, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		errStr := fmt.Errorf("Not exists such file. %s\n\tauto make it, please write it. ", configPath)
+		err := InitializeConfigFile(configPath)
+		if err != nil {
+			return setting, err
+		}
+		return setting, errStr
 	}
 	if err := json.Unmarshal(bytes, &setting); err != nil {
 		return setting, err
@@ -41,7 +54,36 @@ func LoadSettings() (Setting, error) {
 		return setting, fmt.Errorf("No deepl token is set.")
 	}
 
+	if (setting.SourceLang == setting.TargetLang) && (setting.SourceLang == "FILLIN") {
+		return setting, fmt.Errorf("Invalid source_lang and target_lang\n\tCheck %s.", configPath)
+	}
+
 	return setting, nil
+}
+
+func InitializeConfigFile(ConfigPath string) error {
+	if err := os.MkdirAll(filepath.Dir(ConfigPath), 0755); err != nil {
+		return err
+	}
+
+	initSetting := Setting{
+		SourceLang: "FILLIN",
+		TargetLang: "FILLIN",
+	}
+
+	out, err := os.Create(ConfigPath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	decoded, err := json.MarshalIndent(initSetting, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	out.Write(([]byte)(decoded))
+	return nil
 }
 
 func Translate(Text string, setting Setting) ([]string, error) {
@@ -85,7 +127,7 @@ func main() {
 	app := &cli.App{
 		Name:      "deepl",
 		Usage:     "Translate sentences.",
-		UsageText: "deepl inputfile | --stdin ",
+		UsageText: "deepl <inputfile | --stdin> ",
 
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
