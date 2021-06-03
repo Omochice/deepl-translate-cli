@@ -28,7 +28,7 @@ type Translation struct {
 	Text                  string `json:"text"`
 }
 
-func LoadSettings() (Setting, error) {
+func LoadSettings(c *cli.Context) (Setting, error) {
 	var setting Setting
 
 	homeDir, err := os.UserHomeDir()
@@ -54,7 +54,14 @@ func LoadSettings() (Setting, error) {
 		return setting, fmt.Errorf("No deepl token is set.")
 	}
 
-	if (setting.SourceLang == setting.TargetLang) && (setting.SourceLang == "FILLIN") {
+	if c.String("source_lang") != "" {
+		setting.SourceLang = c.String("source_lang")
+	}
+	if c.String("target_lang") != "" {
+		setting.TargetLang = c.String("target_lang")
+	}
+
+	if (setting.SourceLang == setting.TargetLang) && (setting.SourceLang == "FILLIN" || setting.TargetLang == "FILLIN") {
 		return setting, fmt.Errorf("Invalid source_lang and target_lang\n\tCheck %s.", configPath)
 	}
 
@@ -127,19 +134,31 @@ func main() {
 	app := &cli.App{
 		Name:      "deepl",
 		Usage:     "Translate sentences.",
-		UsageText: "deepl <inputfile | --stdin> ",
+		UsageText: "deepl [-s|-t] <inputfile | --stdin> ",
 
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "stdin",
 				Usage: "use stdin.",
 			},
+			&cli.StringFlag{
+				Name:    "source_lang",
+				Aliases: []string{"s"},
+				Usage:   "Source `LANG`",
+			},
+
+			&cli.StringFlag{
+				Name:    "target_lang",
+				Aliases: []string{"t"},
+				Usage:   "Target `LANG`",
+			},
 		},
 		Action: func(c *cli.Context) error {
-			setting, err := LoadSettings()
+			setting, err := LoadSettings(c)
 			if err != nil {
 				return err
 			}
+			fmt.Println(setting)
 			if c.NArg() < 1 && !c.Bool("stdin") {
 				return fmt.Errorf("the filename or --stdin option is needed.")
 			}
