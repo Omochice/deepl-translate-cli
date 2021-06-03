@@ -9,6 +9,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"syscall"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/urfave/cli/v2"
 )
@@ -158,19 +161,37 @@ func main() {
 			if err != nil {
 				return err
 			}
-			fmt.Println(setting)
 			if c.NArg() < 1 && !c.Bool("stdin") {
 				return fmt.Errorf("the filename or --stdin option is needed.")
 			}
-			f, err := os.Open(c.Args().First())
-			if err != nil {
-				return err
+
+			var rawSentense string
+			if c.Bool("stdin") {
+				if terminal.IsTerminal(syscall.Stdin) {
+					// is not pipe
+					fmt.Scan(&rawSentense)
+				} else {
+					// is pipe
+					pipeIn, err := ioutil.ReadAll(os.Stdin)
+					if err != nil {
+						return err
+					}
+					rawSentense = string(pipeIn)
+				}
+
+			} else {
+				f, err := os.Open(c.Args().First())
+				if err != nil {
+					return err
+				}
+				b, err := ioutil.ReadAll(f)
+				if err != nil {
+					return err
+				}
+				rawSentense = string(b)
 			}
-			b, err := ioutil.ReadAll(f)
-			if err != nil {
-				return err
-			}
-			translateds, err := Translate(string(b), setting)
+
+			translateds, err := Translate(rawSentense, setting)
 			if err != nil {
 				return err
 			}
