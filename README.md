@@ -29,7 +29,7 @@
 
 - If you want translate from existing file.
 ```console
-$ deepl-translate <text.txt>
+$ deepl-translation <text.txt>
 ```
 
 - If you want use stdin.
