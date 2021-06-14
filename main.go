@@ -9,10 +9,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"syscall"
 
-	"golang.org/x/crypto/ssh/terminal"
-
+	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v2"
 )
 
@@ -164,7 +162,7 @@ func main() {
 
 			var rawSentense string
 			if c.Bool("stdin") {
-				if terminal.IsTerminal(syscall.Stdin) {
+				if isatty.IsTerminal(os.Stdin.Fd()) {
 					// is not pipe
 					fmt.Scan(&rawSentense)
 				} else {
