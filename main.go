@@ -9,9 +9,17 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v2"
+)
+
+var (
+	version = "develop"
+	commit  = "none"
+	date    = "unkdown"
+	buildBy = "unkdown"
 )
 
 type Setting struct {
@@ -136,6 +144,11 @@ func main() {
 		Name:      "deepl",
 		Usage:     "Translate sentences.",
 		UsageText: "deepl [-s|-t] <inputfile | --stdin> ",
+		Version:   fmt.Sprintf("%s (rev %s) [%s %s %s] [build at %s by %s]", version, commit, runtime.GOOS, runtime.GOARCH, runtime.Version(), date, buildBy),
+		Authors: []*cli.Author{
+			&cli.Author{
+				Name: "Omochice"},
+		},
 
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
