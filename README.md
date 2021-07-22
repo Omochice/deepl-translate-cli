@@ -1,5 +1,7 @@
 # ✍️Deepl translate cli
 
+![sampleMovie](https://i.gyazo.com/907bae0779d11c324576ee7777768312.gif)
+
 ## Installation
 
 1. Download zipped file from [Releases](https://github.com/Omochice/deepl-translate-cli/releases).
