@@ -10,17 +10,29 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v2"
 )
 
 var (
-	version = "develop"
+	version = ""
 	commit  = "none"
 	date    = "unkdown"
 	buildBy = "unkdown"
 )
+
+func getVersion() string {
+	if version != "" {
+		return version
+	}
+	i, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+	return i.Main.Version
+}
 
 type Setting struct {
 	AuthKey    string `json:"-"`
@@ -144,7 +156,7 @@ func main() {
 		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences.",
 		UsageText: "deepl-translate-cli [-s|-t] <inputfile | --stdin> ",
-		Version:   fmt.Sprintf("%s (rev %s) [%s %s %s] [build at %s by %s]", version, commit, runtime.GOOS, runtime.GOARCH, runtime.Version(), date, buildBy),
+		Version:   fmt.Sprintf("%s (rev %s) [%s %s %s] [build at %s by %s]", getVersion(), commit, runtime.GOOS, runtime.GOARCH, runtime.Version(), date, buildBy),
 		Authors: []*cli.Author{
 			&cli.Author{
 				Name: "Omochice",

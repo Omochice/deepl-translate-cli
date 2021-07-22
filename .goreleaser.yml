@@ -9,8 +9,8 @@ builds:
     binary: deepl-translate-cli
     ldflags:
       - -s -w
-      - -X main.Version={{.Version}}
-      - -X main.Revision={{.ShortCommit}}
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
     env:
       - CGO_ENABLED=0
 archives:
