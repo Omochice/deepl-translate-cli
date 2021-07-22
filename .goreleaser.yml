@@ -1,4 +1,4 @@
-project_name: deepl-translation-cli
+project_name: deepl-translate-cli
 env:
   - GO111MODULE=on
 before:
@@ -6,7 +6,7 @@ before:
     - go mod tidy
 builds:
   - main: .
-    binary: deepl-translation
+    binary: deepl-translate-cli
     ldflags:
       - -s -w
       - -X main.Version={{.Version}}

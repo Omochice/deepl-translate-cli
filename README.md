@@ -14,12 +14,14 @@
 1. Get deepl access token. See [here](https://www.deepl.com/docs-api).
 
 2. Set access token as `DEEPL_TOKEN`
- ex. in `Bash`.
- ```bash
- export DEEPL_TOKEN <YOUR TOKEN>
- ```
 
-3. Make configure file in `<user home directory>/.config/deepl-translation/setting.json`.
+    ex. in `Bash`.
+
+    ```bash
+    export DEEPL_TOKEN <YOUR TOKEN>
+    ```
+
+3. Make configure file in `<user home directory>/.config/deepl-translate-cli/setting.json`.
 
     If run command without existing setting file, auto make it.
 
@@ -28,17 +30,17 @@
 ## Usage
 
 - If you want translate from existing file.
-```console
-$ deepl-translation <text.txt>
-```
+    ```console
+    $ deepl-translate-cli <text.txt>
+    ```
 
 - If you want use stdin.
-    - with pipe 
+    - with pipe
         ```console
-        $ echo "hello" | deepl-translation --stdin
+        $ echo "hello" | deepl-translate-cli --stdin
         ```
     - with input
         ```console
-        $ deepl-translation --stdin
+        $ deepl-translate-cli --stdin
         <input text that wanted translate> <Enter>
         ```

@@ -45,7 +45,7 @@ func LoadSettings(c *cli.Context) (Setting, error) {
 		return setting, err
 	}
 
-	configPath := filepath.Join(homeDir, ".config", "deepl-translation", "setting.json")
+	configPath := filepath.Join(homeDir, ".config", "deepl-translate-cli", "setting.json")
 	bytes, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		errStr := fmt.Errorf("Not exists such file. %s\n\tauto make it, please write it. ", configPath)
@@ -141,13 +141,14 @@ func ParseResponse(resp *http.Response) (Response, error) {
 
 func main() {
 	app := &cli.App{
-		Name:      "deepl",
+		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences.",
-		UsageText: "deepl [-s|-t] <inputfile | --stdin> ",
+		UsageText: "deepl-translate-cli [-s|-t] <inputfile | --stdin> ",
 		Version:   fmt.Sprintf("%s (rev %s) [%s %s %s] [build at %s by %s]", version, commit, runtime.GOOS, runtime.GOARCH, runtime.Version(), date, buildBy),
 		Authors: []*cli.Author{
 			&cli.Author{
-				Name: "Omochice"},
+				Name: "Omochice",
+			},
 		},
 
 		Flags: []cli.Flag{
