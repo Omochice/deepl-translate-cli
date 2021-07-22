@@ -9,8 +9,9 @@
 3. Move executable file into directory in PATH. (like `$HOME/.local/bin/`)
 
 
-## Before using
+## Installation
 
+### By [github release page](https://github.com/Omochice/deepl-translate-cli/releases)
 1. Get deepl access token. See [here](https://www.deepl.com/docs-api).
 
 2. Set access token as `DEEPL_TOKEN`
@@ -26,6 +27,11 @@
     If run command without existing setting file, auto make it.
 
     For write setting file, see [this page](https://www.deepl.com/docs-api/translating-text/request/).
+
+### By `go install`
+```sh
+go install github.com/Omochice/deepl-translate-cli@latest
+```
 
 ## Usage
 
