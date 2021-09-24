@@ -11,6 +11,8 @@ builds:
       - -s -w
       - -X main.version={{.Version}}
       - -X main.commit={{.ShortCommit}}
+      - -X main.date={{.Date}}
+      - -X main.buildBy="goreleaser"
     env:
       - CGO_ENABLED=0
 archives:
