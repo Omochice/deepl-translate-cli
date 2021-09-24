@@ -160,9 +160,16 @@ func main() {
 		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences.",
 		UsageText: "deepl-translate-cli [-s|-t] <inputfile | --stdin> ",
-		Version:   fmt.Sprintf("%s (rev %s) [%s %s %s] [build at %s by %s]", getVersion(), commit, runtime.GOOS, runtime.GOARCH, runtime.Version(), date, buildBy),
+		Version: fmt.Sprintf("%s (rev %s) [%s %s %s] [build at %s by %s]",
+			getVersion(),
+			commit,
+			runtime.GOOS,
+			runtime.GOARCH,
+			runtime.Version(),
+			date,
+			buildBy),
 		Authors: []*cli.Author{
-			&cli.Author{
+			{
 				Name: "Omochice",
 			},
 		},
