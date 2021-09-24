@@ -83,9 +83,8 @@ func LoadSettings(c *cli.Context) (Setting, error) {
 	}
 
 	if (setting.SourceLang == setting.TargetLang) && (setting.SourceLang == "FILLIN" || setting.TargetLang == "FILLIN") {
-		return setting, fmt.Errorf("Invalid source_lang and target_lang\n\tCheck %s.", configPath)
+		return setting, fmt.Errorf("Invalid source_lang and target_lang\n\tCheck %s or arguments.", configPath)
 	}
-
 	return setting, nil
 }
 
@@ -145,9 +144,14 @@ func ParseResponse(resp *http.Response) (Response, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
+		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
 		return responseJson, err
 	}
 	err = json.Unmarshal(body, &responseJson)
+	if err != nil {
+		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
+		return responseJson, err
+	}
 	return responseJson, err
 }
 
