@@ -51,35 +51,35 @@ type Translation struct {
 
 func LoadSettings(c *cli.Context) (Setting, error) {
 	var setting Setting
-
 	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return setting, err
-	}
-
 	configPath := filepath.Join(homeDir, ".config", "deepl-translate-cli", "setting.json")
-	bytes, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		errStr := fmt.Errorf("Not exists such file. %s\n\tauto make it, please write it. ", configPath)
-		err := InitializeConfigFile(configPath)
-		if err != nil {
-			return setting, err
-		}
-		return setting, errStr
-	}
-	if err := json.Unmarshal(bytes, &setting); err != nil {
-		return setting, err
-	}
+
 	setting.AuthKey = os.Getenv("DEEPL_TOKEN")
 	if setting.AuthKey == "" {
 		return setting, fmt.Errorf("No deepl token is set.")
 	}
 
-	if c.String("source_lang") != "" {
-		setting.SourceLang = c.String("source_lang")
-	}
-	if c.String("target_lang") != "" {
-		setting.TargetLang = c.String("target_lang")
+	setting.SourceLang = c.String("source_lang")
+	setting.TargetLang = c.String("target_lang")
+
+	if setting.TargetLang == "" || setting.SourceLang == "" {
+		// if eigher is not set, load file.
+		if err != nil {
+			return setting, err
+		}
+
+		bytes, err := ioutil.ReadFile(configPath)
+		if err != nil {
+			errStr := fmt.Errorf("Not exists such file. %s\n\tauto make it, please write it. ", configPath)
+			err := InitializeConfigFile(configPath)
+			if err != nil {
+				return setting, err
+			}
+			return setting, errStr
+		}
+		if err := json.Unmarshal(bytes, &setting); err != nil {
+			return setting, fmt.Errorf("%s (occurred while loading setting.json)", err.Error())
+		}
 	}
 
 	if (setting.SourceLang == setting.TargetLang) && (setting.SourceLang == "FILLIN" || setting.TargetLang == "FILLIN") {
