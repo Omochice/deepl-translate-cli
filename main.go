@@ -119,8 +119,8 @@ func Translate(Text string, setting Setting) ([]string, error) {
 	params.Add("source_lang", setting.SourceLang)
 	params.Add("target_lang", setting.TargetLang)
 	params.Add("text", Text)
-	baseUrl := "https://api-free.deepl.com/v2/translate"
-	resp, err := http.PostForm(baseUrl, params)
+	endpoint := "https://api-free.deepl.com/v2/translate"
+	resp, err := http.PostForm(endpoint, params)
 
 	results := []string{}
 	if err != nil {
