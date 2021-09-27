@@ -49,7 +49,7 @@ type Translation struct {
 	Text                  string `json:"text"`
 }
 
-func LoadSettings(setting Setting) (Setting, error) {
+func LoadSettings(setting Setting, automake bool) (Setting, error) {
 	if setting.AuthKey == "" {
 		return setting, fmt.Errorf("No deepl token is set.")
 	}
@@ -65,9 +65,11 @@ func LoadSettings(setting Setting) (Setting, error) {
 		bytes, err := ioutil.ReadFile(configPath)
 		if err != nil {
 			errStr := fmt.Errorf("Not exists such file. %s\n\tauto make it, please write it. ", configPath)
-			err := InitializeConfigFile(configPath)
-			if err != nil {
-				return setting, err
+			if automake {
+				err := InitializeConfigFile(configPath)
+				if err != nil {
+					return setting, err
+				}
 			}
 			return setting, errStr
 		}
@@ -133,7 +135,6 @@ func Translate(Text string, setting Setting) ([]string, error) {
 	}
 
 	return results, err
-
 }
 
 func ParseResponse(resp *http.Response) (Response, error) {
@@ -193,7 +194,7 @@ func main() {
 				SourceLang: c.String("source_lang"),
 				TargetLang: c.String("target_lang"),
 				AuthKey:    os.Getenv("DEEPL_TOKEN"),
-			})
+			}, true)
 			if err != nil {
 				return err
 			}
