@@ -49,20 +49,14 @@ type Translation struct {
 	Text                  string `json:"text"`
 }
 
-func LoadSettings(c *cli.Context) (Setting, error) {
-	var setting Setting
-	homeDir, err := os.UserHomeDir()
-	configPath := filepath.Join(homeDir, ".config", "deepl-translate-cli", "setting.json")
-
-	setting.AuthKey = os.Getenv("DEEPL_TOKEN")
+func LoadSettings(setting Setting) (Setting, error) {
 	if setting.AuthKey == "" {
 		return setting, fmt.Errorf("No deepl token is set.")
 	}
 
-	setting.SourceLang = c.String("source_lang")
-	setting.TargetLang = c.String("target_lang")
-
 	if setting.TargetLang == "" || setting.SourceLang == "" {
+		homeDir, err := os.UserHomeDir()
+		configPath := filepath.Join(homeDir, ".config", "deepl-translate-cli", "setting.json")
 		// if eigher is not set, load file.
 		if err != nil {
 			return setting, err
@@ -80,10 +74,13 @@ func LoadSettings(c *cli.Context) (Setting, error) {
 		if err := json.Unmarshal(bytes, &setting); err != nil {
 			return setting, fmt.Errorf("%s (occurred while loading setting.json)", err.Error())
 		}
-	}
+		if setting.SourceLang == "FILLIN" || setting.TargetLang == "FILLIN" {
+			return setting, fmt.Errorf("Did write config file? (%s)", configPath)
 
-	if (setting.SourceLang == setting.TargetLang) && (setting.SourceLang == "FILLIN" || setting.TargetLang == "FILLIN") {
-		return setting, fmt.Errorf("Invalid source_lang and target_lang\n\tCheck %s or arguments.", configPath)
+		}
+	}
+	if setting.SourceLang == setting.TargetLang {
+		return setting, fmt.Errorf("Equal source lang(%s) and target lang(%s)", setting.SourceLang, setting.TargetLang)
 	}
 	return setting, nil
 }
@@ -192,7 +189,11 @@ func main() {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			setting, err := LoadSettings(c)
+			setting, err := LoadSettings(Setting{
+				SourceLang: c.String("source_lang"),
+				TargetLang: c.String("target_lang"),
+				AuthKey:    os.Getenv("DEEPL_TOKEN"),
+			})
 			if err != nil {
 				return err
 			}
