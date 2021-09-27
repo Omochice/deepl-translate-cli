@@ -89,7 +89,7 @@ func LoadSettings(c *cli.Context) (Setting, error) {
 }
 
 func InitializeConfigFile(ConfigPath string) error {
-	if err := os.MkdirAll(filepath.Dir(ConfigPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(ConfigPath), 0644); err != nil {
 		return err
 	}
 
