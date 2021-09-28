@@ -38,6 +38,7 @@ type Setting struct {
 	AuthKey    string `json:"-"`
 	SourceLang string `json:"source_lang"`
 	TargetLang string `json:"target_lang"`
+	IsPro      bool   `json:"-"`
 }
 
 type DeepLResponse struct {
@@ -78,7 +79,6 @@ func LoadSettings(setting Setting, automake bool) (Setting, error) {
 		}
 		if setting.SourceLang == "FILLIN" || setting.TargetLang == "FILLIN" {
 			return setting, fmt.Errorf("Did write config file? (%s)", configPath)
-
 		}
 	}
 	if setting.SourceLang == setting.TargetLang {
@@ -95,6 +95,7 @@ func InitializeConfigFile(ConfigPath string) error {
 	initSetting := Setting{
 		SourceLang: "FILLIN",
 		TargetLang: "FILLIN",
+		IsPro:      false,
 	}
 
 	out, err := os.Create(ConfigPath)
@@ -119,6 +120,11 @@ func Translate(Text string, setting Setting) ([]string, error) {
 	params.Add("target_lang", setting.TargetLang)
 	params.Add("text", Text)
 	endpoint := "https://api-free.deepl.com/v2/translate"
+
+	if setting.IsPro {
+		endpoint = "https://api.deepl.com/v2/translate"
+	}
+
 	resp, err := http.PostForm(endpoint, params)
 
 	results := []string{}
@@ -215,12 +221,17 @@ func main() {
 				Aliases: []string{"t"},
 				Usage:   "Target `LANG`",
 			},
+			&cli.BoolFlag{
+				Name:  "pro",
+				Usage: "use pro plan's endpoint",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			setting, err := LoadSettings(Setting{
 				SourceLang: c.String("source_lang"),
 				TargetLang: c.String("target_lang"),
 				AuthKey:    os.Getenv("DEEPL_TOKEN"),
+				IsPro:      c.Bool("pro"),
 			}, true)
 			if err != nil {
 				return err
@@ -239,7 +250,6 @@ func main() {
 					}
 					rawSentense = string(pipeIn)
 				}
-
 			} else {
 				if c.NArg() == 0 {
 					return fmt.Errorf("No filename is set. And `--stdin` option is not set.\nEither must be set.")
