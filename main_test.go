@@ -16,6 +16,7 @@ func TestLoadsettings(t *testing.T) {
 		AuthKey:    "test",
 		SourceLang: "EN",
 		TargetLang: "JA",
+		IsPro:      false,
 	}
 	actual, err = LoadSettings(setting, false)
 	if err != nil {
@@ -34,6 +35,7 @@ func TestLoadsettings(t *testing.T) {
 		AuthKey:    "",
 		SourceLang: "EN",
 		TargetLang: "JA",
+		IsPro:      false,
 	}
 	actual, err = LoadSettings(setting, false)
 	if err == nil {
@@ -48,6 +50,7 @@ func TestLoadsettings(t *testing.T) {
 		AuthKey:    "test",
 		SourceLang: "EN",
 		TargetLang: "EN",
+		IsPro:      false,
 	}
 	actual, err = LoadSettings(setting, false)
 	if err == nil {
