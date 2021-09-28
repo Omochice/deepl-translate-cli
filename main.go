@@ -40,11 +40,11 @@ type Setting struct {
 	TargetLang string `json:"target_lang"`
 }
 
-type Response struct {
-	Translations []Translation
+type DeepLResponse struct {
+	Translations []Translated
 }
 
-type Translation struct {
+type Translated struct {
 	DetectedSourceLaguage string `json:"detected_source_language"`
 	Text                  string `json:"text"`
 }
@@ -155,7 +155,7 @@ func Translate(Text string, setting Setting) ([]string, error) {
 
 	translateResponse, err := ParseResponse(resp)
 	if err != nil {
-		return []string{}, err
+		return results, err
 	}
 	for _, translated := range translateResponse.Translations {
 		results = append(results, translated.Text)
@@ -164,8 +164,8 @@ func Translate(Text string, setting Setting) ([]string, error) {
 	return results, err
 }
 
-func ParseResponse(resp *http.Response) (Response, error) {
-	var responseJson Response
+func ParseResponse(resp *http.Response) (DeepLResponse, error) {
+	var responseJson DeepLResponse
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
