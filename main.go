@@ -34,6 +34,67 @@ func getVersion() string {
 	return i.Main.Version
 }
 
+type DeepL interface {
+	Translate(Text string, setting Setting) ([]string, error)
+}
+
+type DeepLClient struct {
+	Endpoint string
+	AuthKey  string
+}
+
+func (c *DeepLClient) Translate(text string, sourceLang string, targetLang string) ([]string, error) {
+	params := url.Values{}
+	params.Add("auth_key", c.AuthKey)
+	params.Add("source_lang", sourceLang)
+	params.Add("target_lang", targetLang)
+	params.Add("text", text)
+	resp, err := http.PostForm(c.Endpoint, params)
+
+	if err := ValidateResponse(resp); err != nil {
+		return []string{}, err
+	}
+	parsed, err := ParseResponse(resp)
+	if err != nil {
+		return []string{}, err
+	}
+	r := []string{}
+	for _, translated := range parsed.Translations {
+		r = append(r, translated.Text)
+	}
+	return r, nil
+}
+
+func ValidateResponse(resp *http.Response) error {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		var data map[string]interface{}
+		errors := map[int]string{
+			400: "Bad request. Please check error message and your parameters.",
+			403: "Authorization failed. Please supply a valid auth_key parameter.",
+			404: "The requested resource could not be found.",
+			413: "The request size exceeds the limit.",
+			414: "The request URL is too long. You can avoid this error by using a POST request instead of a GET request, and sending the parameters in the HTTP body.",
+			429: "Too many requests. Please wait and resend your request.",
+			456: "Quota exceeded. The character limit has been reached.",
+			503: "Resource currently unavailable. Try again later.",
+			529: "Too many requests. Please wait and resend your request.",
+		} // this from https://www.deepl.com/docs-api/accessing-the-api/error-handling/
+		e := json.NewDecoder(resp.Body).Decode(&data)
+		baseErrorText := fmt.Sprintf("Invalid response [%d %s]",
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode))
+		if t, ok := errors[resp.StatusCode]; ok {
+			baseErrorText += fmt.Sprintf(" %s", t)
+		}
+		if e != nil {
+			return fmt.Errorf("%s", baseErrorText)
+		} else {
+			return fmt.Errorf("%s, %s", baseErrorText, data["message"])
+		}
+	}
+	return nil
+}
+
 type Setting struct {
 	AuthKey    string `json:"-"`
 	SourceLang string `json:"source_lang"`
@@ -95,7 +156,6 @@ func InitializeConfigFile(ConfigPath string) error {
 	initSetting := Setting{
 		SourceLang: "FILLIN",
 		TargetLang: "FILLIN",
-		IsPro:      false,
 	}
 
 	out, err := os.Create(ConfigPath)
@@ -113,61 +173,11 @@ func InitializeConfigFile(ConfigPath string) error {
 	return nil
 }
 
-func Translate(Text string, setting Setting) ([]string, error) {
-	params := url.Values{}
-	params.Add("auth_key", setting.AuthKey)
-	params.Add("source_lang", setting.SourceLang)
-	params.Add("target_lang", setting.TargetLang)
-	params.Add("text", Text)
-	endpoint := "https://api-free.deepl.com/v2/translate"
-
-	if setting.IsPro {
-		endpoint = "https://api.deepl.com/v2/translate"
+func getUrl(IsPro bool) string {
+	if IsPro {
+		return "https://api.deepl.com/v2/translate"
 	}
-
-	resp, err := http.PostForm(endpoint, params)
-
-	results := []string{}
-	if err != nil {
-		return results, err
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		var data map[string]interface{}
-		errors := map[int]string{
-			400: "Bad request. Please check error message and your parameters.",
-			403: "Authorization failed. Please supply a valid auth_key parameter.",
-			404: "The requested resource could not be found.",
-			413: "The request size exceeds the limit.",
-			414: "The request URL is too long. You can avoid this error by using a POST request instead of a GET request, and sending the parameters in the HTTP body.",
-			429: "Too many requests. Please wait and resend your request.",
-			456: "Quota exceeded. The character limit has been reached.",
-			503: "Resource currently unavailable. Try again later.",
-			529: "Too many requests. Please wait and resend your request.",
-		} // this from https://www.deepl.com/docs-api/accessing-the-api/error-handling/
-		e := json.NewDecoder(resp.Body).Decode(&data)
-		baseErrorText := fmt.Sprintf("Invalid response [%d %s]",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode))
-		if t, ok := errors[resp.StatusCode]; ok {
-			baseErrorText += fmt.Sprintf(" %s", t)
-		}
-		if e != nil {
-			return results, fmt.Errorf("%s", baseErrorText)
-		} else {
-			return results, fmt.Errorf("%s, %s", baseErrorText, data["message"])
-		}
-	}
-
-	translateResponse, err := ParseResponse(resp)
-	if err != nil {
-		return results, err
-	}
-	for _, translated := range translateResponse.Translations {
-		results = append(results, translated.Text)
-	}
-
-	return results, err
+	return "https://api-free.deepl.com/v2/translate"
 }
 
 func ParseResponse(resp *http.Response) (DeepLResponse, error) {
@@ -191,14 +201,16 @@ func main() {
 		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences.",
 		UsageText: "deepl-translate-cli [-s|-t] <inputfile | --stdin> ",
-		Version: fmt.Sprintf("%s (rev %s) [%s %s %s] [build at %s by %s]",
+		Version: fmt.Sprintf(
+			"%s (rev %s) [%s %s %s] [build at %s by %s]",
 			getVersion(),
 			commit,
 			runtime.GOOS,
 			runtime.GOARCH,
 			runtime.Version(),
 			date,
-			buildBy),
+			buildBy,
+		),
 		Authors: []*cli.Author{
 			{
 				Name: "Omochice",
@@ -265,7 +277,11 @@ func main() {
 				rawSentense = string(b)
 			}
 
-			translateds, err := Translate(rawSentense, setting)
+			client := DeepLClient{
+				Endpoint: getUrl(c.Bool("pro")),
+				AuthKey:  setting.AuthKey,
+			}
+			translateds, err := client.Translate(rawSentense, setting.SourceLang, setting.TargetLang)
 			if err != nil {
 				return err
 			}
