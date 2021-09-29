@@ -1,6 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -58,4 +64,53 @@ func TestLoadsettings(t *testing.T) {
 	}
 }
 
-func TestTranslate(t *testing.T) {}
+func TestValidateResponse(t *testing.T) {
+	var errorText string
+	testErrorMes := map[string]string{
+		"message": "test message",
+	}
+	testBody, err := json.Marshal(testErrorMes)
+	if err != nil {
+		t.Fatalf("marshal error")
+	}
+	testResponse := http.Response{
+		Status:     "200 test",
+		StatusCode: 200,
+		Body:       ioutil.NopCloser(bytes.NewBuffer(testBody)),
+	}
+
+	for c := 100; c < 512; c++ {
+		if http.StatusText(c) == "" {
+			// unused stasus code
+			continue
+		}
+		testResponse.Status = fmt.Sprintf("%d test", c)
+		testResponse.StatusCode = c
+		err := ValidateResponse(&testResponse)
+		if c >= 200 && c < 300 {
+			errorText = "If status code is between 200 and 299, no error should be returned"
+			if err != nil {
+				t.Fatalf("%s\nActual: %s", errorText, err.Error())
+			}
+			continue
+		}
+		if err == nil {
+			t.Fatalf("If Status code is not 200 <= c < 300, should occur error\nStatus code: %d, Response: %v",
+				c, testResponse)
+		} else {
+			if !strings.Contains(err.Error(), http.StatusText(c)) {
+				errorText = fmt.Sprintf("Error text should include Status Code(%s)\nActual: %s",
+					http.StatusText(c), err.Error())
+			}
+			if statusText, ok := KnownErrors[c]; ok { // errored
+				if !strings.Contains(err.Error(), statusText) {
+					errorText = fmt.Sprintf("If stasus code is knownded, the text should include it's error text\nExpected: %s\nActual: %s",
+						statusText, err.Error())
+					t.Fatalf("%s", errorText)
+				}
+			}
+		}
+	}
+	// TODO test when body is valid/invalid as json
+
+}

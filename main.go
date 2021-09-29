@@ -65,27 +65,28 @@ func (c *DeepLClient) Translate(text string, sourceLang string, targetLang strin
 	return r, nil
 }
 
+var KnownErrors = map[int]string{
+	400: "Bad request. Please check error message and your parameters.",
+	403: "Authorization failed. Please supply a valid auth_key parameter.",
+	404: "The requested resource could not be found.",
+	413: "The request size exceeds the limit.",
+	414: "The request URL is too long. You can avoid this error by using a POST request instead of a GET request, and sending the parameters in the HTTP body.",
+	429: "Too many requests. Please wait and resend your request.",
+	456: "Quota exceeded. The character limit has been reached.",
+	503: "Resource currently unavailable. Try again later.",
+	529: "Too many requests. Please wait and resend your request.",
+} // this from https://www.deepl.com/docs-api/accessing-the-api/error-handling/
+
 func ValidateResponse(resp *http.Response) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var data map[string]interface{}
-		errors := map[int]string{
-			400: "Bad request. Please check error message and your parameters.",
-			403: "Authorization failed. Please supply a valid auth_key parameter.",
-			404: "The requested resource could not be found.",
-			413: "The request size exceeds the limit.",
-			414: "The request URL is too long. You can avoid this error by using a POST request instead of a GET request, and sending the parameters in the HTTP body.",
-			429: "Too many requests. Please wait and resend your request.",
-			456: "Quota exceeded. The character limit has been reached.",
-			503: "Resource currently unavailable. Try again later.",
-			529: "Too many requests. Please wait and resend your request.",
-		} // this from https://www.deepl.com/docs-api/accessing-the-api/error-handling/
-		e := json.NewDecoder(resp.Body).Decode(&data)
 		baseErrorText := fmt.Sprintf("Invalid response [%d %s]",
 			resp.StatusCode,
 			http.StatusText(resp.StatusCode))
-		if t, ok := errors[resp.StatusCode]; ok {
+		if t, ok := KnownErrors[resp.StatusCode]; ok {
 			baseErrorText += fmt.Sprintf(" %s", t)
 		}
+		e := json.NewDecoder(resp.Body).Decode(&data)
 		if e != nil {
 			return fmt.Errorf("%s", baseErrorText)
 		} else {
