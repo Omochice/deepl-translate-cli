@@ -111,6 +111,31 @@ func TestValidateResponse(t *testing.T) {
 			}
 		}
 	}
-	// TODO test when body is valid/invalid as json
+	// test when body is valid/invalid as json
+	invalidResp := http.Response{
+		Status:     "444 not exists error",
+		StatusCode: 444,
+		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte("test"))),
+	}
+	err = ValidateResponse(&invalidResp)
+	if err == nil {
+		t.Fatalf("If status code is invalid, should occur error\nActual: %d", invalidResp.StatusCode)
+	} else if !strings.HasSuffix(err.Error(), "]") {
+		t.Fatalf("If body is invalid as json, error is formated as %s",
+			"`Invalid response [statuscode statustext]`")
+	}
 
+	expectedMessage := "This is test"
+	validResp := http.Response{
+		Status:     "444 not exists error",
+		StatusCode: 444,
+		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(fmt.Sprintf(`{"message": "%s"}`, expectedMessage)))),
+	}
+	err = ValidateResponse(&validResp)
+	if err == nil {
+		t.Fatalf("If is status code invalid, should occur error\nActual: %d", validResp.StatusCode)
+	} else if !strings.HasSuffix(err.Error(), expectedMessage) {
+		t.Fatalf("If body is valid as json, error suffix should have `%s`\nActual: %s",
+			expectedMessage, err.Error())
+	}
 }
