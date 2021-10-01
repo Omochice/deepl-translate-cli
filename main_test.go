@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -71,7 +72,7 @@ func TestValidateResponse(t *testing.T) {
 	}
 	testBody, err := json.Marshal(testErrorMes)
 	if err != nil {
-		t.Fatalf("marshal error")
+		t.Fatalf("Error within json.Marshal")
 	}
 	testResponse := http.Response{
 		Status:     "200 test",
@@ -137,5 +138,67 @@ func TestValidateResponse(t *testing.T) {
 	} else if !strings.HasSuffix(err.Error(), expectedMessage) {
 		t.Fatalf("If body is valid as json, error suffix should have `%s`\nActual: %s",
 			expectedMessage, err.Error())
+	}
+}
+
+func TestParseResponse(t *testing.T) {
+	baseResponse := http.Response{
+		Status:     "200 test",
+		StatusCode: 200,
+	}
+	{
+		input := map[string][]map[string]string{
+			"Translations": make([]map[string]string, 3),
+		}
+		sampleRes := map[string]string{
+			"detected_source_language": "test",
+			"text":                     "test text",
+		}
+		input["Translations"][0] = sampleRes
+		input["Translations"][1] = sampleRes
+		input["Translations"][2] = sampleRes
+		b, err := json.Marshal(input)
+		if err != nil {
+			t.Fatal("Error within json.Marshal")
+		}
+		baseResponse.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		res, err := ParseResponse(&baseResponse)
+		if err != nil {
+			t.Fatalf("If input is valid, should not occur error\n%s", err.Error())
+		}
+
+		if len(res.Translations) != len(input["Translations"]) {
+			t.Fatalf("Length of result.Translations should be equal to input.Translations\nExpected: %d\nActual: %d",
+				len(res.Translations), len(input["Translations"]))
+		}
+	}
+	{
+		input := map[string][]map[string]string{
+			"Translations": make([]map[string]string, 1),
+		}
+		sampleRes := map[string]string{
+			"detected_source_language": "test",
+			"text":                     "test text",
+			"this will be ignored":     "test",
+		}
+		input["Translations"][0] = sampleRes
+		b, err := json.Marshal(input)
+		if err != nil {
+			t.Fatal("Error within json.Marshal")
+		}
+		baseResponse.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		res, err := ParseResponse(&baseResponse)
+		if err != nil {
+			t.Fatalf("If input is valid, should not occur error\n%s", err.Error())
+		}
+		if len(res.Translations) != len(input["Translations"]) {
+			t.Fatalf("Length of result.Translations should be equal to input.Translations\nExpected: %d\nActual: %d",
+				len(res.Translations), len(input["Translations"]))
+		}
+		resType := reflect.ValueOf(res.Translations[0]).Type()
+		expectedNumOfField := 2
+		if resType.NumField() != expectedNumOfField {
+			t.Fatalf("Length of Translated's filed should be equal %d\nActual: %d", expectedNumOfField, resType.NumField())
+		}
 	}
 }

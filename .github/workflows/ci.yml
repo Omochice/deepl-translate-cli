@@ -1,0 +1,28 @@
+name: go-test
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.go"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "**/*.go"
+      - ".github/workflows/ci.yml"
+
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Git Checkout Deno Module
+        uses: actions/checkout@v2
+      - name: Set up go
+        uses: actions/setup-go@v2
+      - name: Dependencies
+        run: go get -v -t -d ./...
+      - name: Go test
+        run: go test -v
