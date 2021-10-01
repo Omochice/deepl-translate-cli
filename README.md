@@ -1,3 +1,6 @@
+[![go-test](https://github.com/Omochice/deepl-translate-cli/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Omochice/deepl-translate-cli/actions/workflows/ci.yml)
+[![goreleaser](https://github.com/Omochice/deepl-translate-cli/actions/workflows/autorelease.yml/badge.svg)](https://github.com/Omochice/deepl-translate-cli/actions/workflows/autorelease.yml)
+
 # ✍️Deepl translate cli
 
 ![sampleMovie](https://i.gyazo.com/907bae0779d11c324576ee7777768312.gif)
