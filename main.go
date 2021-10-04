@@ -226,13 +226,13 @@ func main() {
 			&cli.StringFlag{
 				Name:    "source_lang",
 				Aliases: []string{"s"},
-				Usage:   "Source `LANG`",
+				Usage:   "Set source language without using setting file",
 			},
 
 			&cli.StringFlag{
 				Name:    "target_lang",
 				Aliases: []string{"t"},
-				Usage:   "Target `LANG`",
+				Usage:   "Set target language without using setting file",
 			},
 			&cli.BoolFlag{
 				Name:  "pro",
