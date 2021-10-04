@@ -3,9 +3,12 @@
 
 # ✍️Deepl translate cli
 
-![sampleMovie](https://i.gyazo.com/907bae0779d11c324576ee7777768312.gif)
+![sampleMovie](https://i.gyazo.com/09a4801d44e85980f83666dceda0166e.gif)
+
 
 ## Installation
+
+### By [github release page](https://github.com/Omochice/deepl-translate-cli/releases)
 
 1. Download zipped file from [Releases](https://github.com/Omochice/deepl-translate-cli/releases).
 
@@ -13,10 +16,13 @@
 
 3. Move executable file into directory in PATH. (like `$HOME/.local/bin/`)
 
+### By `go install`
+```sh
+go install github.com/Omochice/deepl-translate-cli@latest
+```
 
-## Installation
+## Usage
 
-### By [github release page](https://github.com/Omochice/deepl-translate-cli/releases)
 1. Get deepl access token. See [here](https://www.deepl.com/docs-api).
 
 2. Set access token as `DEEPL_TOKEN`
@@ -27,31 +33,35 @@
     export DEEPL_TOKEN <YOUR TOKEN>
     ```
 
-3. Make configure file in `<user home directory>/.config/deepl-translate-cli/setting.json`.
+3. On the first run, if `<user home directory>/.config/deepl-translate-cli/setting.json` does not exist, make it automatically. 
 
-    If run command without existing setting file, auto make it.
-
+    The format of setting file is below.
+    ```json
+    {
+      "source_lang": "FILLIN",
+      "target_lang": "FILLIN"
+    }
+    ```
     For write setting file, see [this page](https://www.deepl.com/docs-api/translating-text/request/).
 
-### By `go install`
-```sh
-go install github.com/Omochice/deepl-translate-cli@latest
-```
 
-## Usage
 
-- If you want translate from existing file.
+4. If file path is not specified, load text from STDIN.
+
+    Currentry, only one path can be specified as argument.
+
+
+
+- If you want to use `source_lang`/`target_lang` without using setting file, try to use `--source_lang (-s)` or `target_lang (-t)` argument.
+    
     ```console
-    $ deepl-translate-cli <text.txt>
+    cat <text.txt> | deepl-translate-cli --source_lang ES --target_lang DE
     ```
 
-- If you want use stdin.
-    - with pipe
-        ```console
-        $ echo "hello" | deepl-translate-cli --stdin
-        ```
-    - with input
-        ```console
-        $ deepl-translate-cli --stdin
-        <input text that wanted translate> <Enter>
-        ```
+- If you use Pro plan, use `--pro` flag to switch endpoint URL.
+    
+    _this feature is not tested because I use free plan._
+    
+    ```console
+    cat <text.txt> | deepl-translate-cli --pro
+    ```
