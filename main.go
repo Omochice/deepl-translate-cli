@@ -201,7 +201,7 @@ func main() {
 	app := &cli.App{
 		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences.",
-		UsageText: "deepl-translate-cli [-s|-t] <inputfile | --stdin> ",
+		UsageText: "deepl-translate-cli [-s|-t] <inputfile>",
 		Version: fmt.Sprintf(
 			"%s (rev %s) [%s %s %s] [build at %s by %s]",
 			getVersion(),
@@ -219,10 +219,6 @@ func main() {
 		},
 
 		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "stdin",
-				Usage: "use stdin.",
-			},
 			&cli.StringFlag{
 				Name:    "source_lang",
 				Aliases: []string{"s"},
@@ -251,7 +247,7 @@ func main() {
 			}
 
 			var rawSentense string
-			if c.Bool("stdin") {
+			if c.NArg() == 0 {
 				if isatty.IsTerminal(os.Stdin.Fd()) {
 					// is not pipe
 					fmt.Scan(&rawSentense)
@@ -264,8 +260,8 @@ func main() {
 					rawSentense = string(pipeIn)
 				}
 			} else {
-				if c.NArg() == 0 {
-					return fmt.Errorf("No filename is set. And `--stdin` option is not set.\nEither must be set.")
+				if c.NArg() >= 2 {
+					return fmt.Errorf("Cannot specify multiple file paths.")
 				}
 				f, err := os.Open(c.Args().First())
 				if err != nil {
