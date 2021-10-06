@@ -1,6 +1,9 @@
 package main
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -55,5 +58,27 @@ func TestLoadsettings(t *testing.T) {
 	actual, err = LoadSettings(setting, false)
 	if err == nil {
 		t.Fatalf(errorText+"\nInputed: %#v", setting)
+	}
+}
+
+func Exists(filename string) bool {
+	_, err := os.Stat(filename)
+	return err == nil
+}
+
+func TestInitializeConfigFile(t *testing.T) {
+	dir, err := ioutil.TempDir("", "example")
+	if err != nil {
+		t.Fatalf("Error occurred in iotuil.Tempdir")
+	}
+	defer os.RemoveAll(dir)
+	p := filepath.Join(dir, "config.json")
+
+	// will success
+	if err := InitializeConfigFile(p); err != nil {
+		t.Fatalf("The function should not occur error\nActual: %s", err.Error())
+	}
+	if !Exists(p) {
+		t.Fatalf("The function should make configfile(%s)", p)
 	}
 }
