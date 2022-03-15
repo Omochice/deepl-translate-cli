@@ -79,7 +79,7 @@ func LoadSettings(setting Setting, automake bool) (Setting, error) {
 }
 
 func InitializeConfigFile(ConfigPath string) error {
-	if err := os.MkdirAll(filepath.Dir(ConfigPath), 0644); err != nil {
+	if err := os.MkdirAll(filepath.Dir(ConfigPath), 0755); err != nil {
 		return err
 	}
 
