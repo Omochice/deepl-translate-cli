@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Git Checkout Go Module
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up go
         uses: actions/setup-go@v2
         with:
