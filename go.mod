@@ -3,7 +3,7 @@ module github.com/Omochice/deepl-translate-cli
 go 1.21.3
 
 require (
-	github.com/mattn/go-isatty v0.0.19
+	github.com/mattn/go-isatty v0.0.20
 	github.com/urfave/cli/v2 v2.25.7
 )
 
