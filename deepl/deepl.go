@@ -13,8 +13,8 @@ type DeepL interface {
 }
 
 type DeepLClient struct {
-	Endpoint string
-	AuthKey  string
+	Endpoint string		// API endpoint, which differs between the Free and the Pro plans.
+	AuthKey  string		// API token, looks like a UUID with ":fx" appended to it.
 }
 
 type DeepLResponse struct {
@@ -48,27 +48,34 @@ func (c *DeepLClient) Translate(text string, sourceLang string, targetLang strin
 	return r, nil
 }
 
-var KnownErrors = map[int]string{
-	400: "Bad request. Please check error message and your parameters.",
-	403: "Authorization failed. Please supply a valid auth_key parameter.",
-	404: "The requested resource could not be found.",
-	413: "The request size exceeds the limit.",
-	414: "The request URL is too long. You can avoid this error by using a POST request instead of a GET request, and sending the parameters in the HTTP body.",
-	429: "Too many requests. Please wait and resend your request.",
-	456: "Quota exceeded. The character limit has been reached.",
-	503: "Resource currently unavailable. Try again later.",
-	529: "Too many requests. Please wait and resend your request.",
-} // this from https://www.deepl.com/docs-api/accessing-the-api/error-handling/
+// Returns an error string based on the HTTP status code, as defined
+// by the `net/http` package, plus the additional error(s) from the DeepL API.
+// SEE: https://www.deepl.com/docs-api/api-access/error-handling
+// NOTE: Replaces former mechanism with a map.
+func StatusText(statusCode int) string {
+	// see if Go knows about this error code:
+	respString := http.StatusText(statusCode)	// returns empty string if unknown error code.
+	if respString == "" {
+		// currently, the DeepL API only adds error code 456, but it may add more in the future...
+		switch statusCode {
+			case 456:
+				respString = "Quota exceeded. The character limit has been reached."
+			default:
+				respString = "Unknown HTTP error."
+		}
+	}
+	return respString
+}
 
+// Validates the response based on its status code, decoding the returned JSON.
 func ValidateResponse(resp *http.Response) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		// Parsed JSON error data.
 		var data map[string]interface{}
 		baseErrorText := fmt.Sprintf("Invalid response [%d %s]",
 			resp.StatusCode,
-			http.StatusText(resp.StatusCode))
-		if t, ok := KnownErrors[resp.StatusCode]; ok {
-			baseErrorText += fmt.Sprintf(" %s", t)
-		}
+			StatusText(resp.StatusCode))
+		// NOTE: code simplification, we now just use the "standard" error codes from `net/htp`.
 		e := json.NewDecoder(resp.Body).Decode(&data)
 		if e != nil {
 			return fmt.Errorf("%s", baseErrorText)

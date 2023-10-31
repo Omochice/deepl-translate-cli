@@ -22,12 +22,12 @@ func TestLoadsettings(t *testing.T) {
 	}
 	actual, err = LoadSettings(setting, false)
 	if err != nil {
-		t.Fatalf(errorText+"\n%#v", err)
+		t.Fatalf(errorText + "\n%#v", err)
 	}
 	if setting.AuthKey != actual.AuthKey ||
 		setting.SourceLang != actual.SourceLang ||
 		setting.TargetLang != actual.TargetLang {
-		t.Fatalf(errorText+"\nExpected: %#v\nActual: %#v", setting, actual)
+		t.Fatalf(errorText + "\nExpected: %#v\nActual: %#v", setting, actual)
 	}
 
 	//

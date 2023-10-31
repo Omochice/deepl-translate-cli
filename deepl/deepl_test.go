@@ -50,12 +50,11 @@ func TestValidateResponse(t *testing.T) {
 					http.StatusText(c), err.Error())
 					t.Fatalf("%s", errorText)	// was this missing?
 			}
-			if statusText, ok := KnownErrors[c]; ok { // errored
-				if !strings.Contains(err.Error(), statusText) {
-					errorText = fmt.Sprintf("If stasus code is knownded, the text should include it's error text\nExpected: %s\nActual: %s",
-						statusText, err.Error())
-					t.Fatalf("%s", errorText)
-				}
+			statusText := StatusText(c) // errored
+			if !strings.Contains(err.Error(), statusText) {
+				errorText = fmt.Sprintf("If stasus code is knownd, the text should include it's error text\nExpected: %s\nActual: %s",
+					statusText, err.Error())
+				t.Fatalf("%s", errorText)
 			}
 		}
 	}
