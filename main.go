@@ -1,9 +1,11 @@
+// Original code by @Omochice <https://github.com/Omochice/deepl-translate-cli>
+// With some extra tweaks by Gwyneth Llewelyn <https://gwynethllewelyn.net>
 package main
 
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,13 +18,15 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// These strings will be retrieved by a call to debug.ReadBuildInfo().
 var (
 	version = "dev"
 	commit  = "none"
-	date    = "unkdown"
-	buildBy = "unkdown"
+	date    = "unknown"
+	buildBy = "unknown"
 )
 
+// Shows the version embedded in the binary.
 func getVersion() string {
 	if version != "" {
 		return version
@@ -41,22 +45,23 @@ type Setting struct {
 	IsPro      bool   `json:"-"`
 }
 
+// Open the settings file, or, if it doesn't exist, create it first.
 func LoadSettings(setting Setting, automake bool) (Setting, error) {
 	if setting.AuthKey == "" {
-		return setting, fmt.Errorf("No deepl token is set.")
+		return setting, fmt.Errorf("no DeepL token is set")
 	}
 
 	if setting.TargetLang == "" || setting.SourceLang == "" {
 		homeDir, err := os.UserHomeDir()
 		configPath := filepath.Join(homeDir, ".config", "deepl-translate-cli", "setting.json")
-		// if eigher is not set, load file.
+		// if either is not set, load file.
 		if err != nil {
 			return setting, err
 		}
 
-		bytes, err := ioutil.ReadFile(configPath)
+		bytes, err := os.ReadFile(configPath)
 		if err != nil {
-			errStr := fmt.Errorf("Not exists such file. %s\n\tauto make it, please write it. ", configPath)
+			errStr := fmt.Errorf("file does not exist. %s\n\tauto make it, please write it", configPath)
 			if automake {
 				err := InitializeConfigFile(configPath)
 				if err != nil {
@@ -69,11 +74,11 @@ func LoadSettings(setting Setting, automake bool) (Setting, error) {
 			return setting, fmt.Errorf("%s (occurred while loading setting.json)", err.Error())
 		}
 		if setting.SourceLang == "FILLIN" || setting.TargetLang == "FILLIN" {
-			return setting, fmt.Errorf("Did write config file? (%s)", configPath)
+			return setting, fmt.Errorf("did write config file? (%s)", configPath)
 		}
 	}
 	if setting.SourceLang == setting.TargetLang {
-		return setting, fmt.Errorf("Equal source lang(%s) and target lang(%s)", setting.SourceLang, setting.TargetLang)
+		return setting, fmt.Errorf("cannot have identical source lang(%s) and target lang(%s)", setting.SourceLang, setting.TargetLang)
 	}
 	return setting, nil
 }
@@ -128,17 +133,17 @@ func main() {
 			&cli.StringFlag{
 				Name:    "source_lang",
 				Aliases: []string{"s"},
-				Usage:   "Set source language without using setting file",
+				Usage:   "Set source language without using the settings file",
 			},
 
 			&cli.StringFlag{
 				Name:    "target_lang",
 				Aliases: []string{"t"},
-				Usage:   "Set target language without using setting file",
+				Usage:   "Set target language without using the settings file",
 			},
 			&cli.BoolFlag{
 				Name:  "pro",
-				Usage: "use pro plan's endpoint",
+				Usage: "Use pro plan's endpoint",
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -152,39 +157,40 @@ func main() {
 				return err
 			}
 
-			var rawSentense string
+			var rawSentence string
 			if c.NArg() == 0 {
+				// no filename path passed; read from STDIN (TTY or pipe)
 				if isatty.IsTerminal(os.Stdin.Fd()) {
-					// is not pipe
-					fmt.Scan(&rawSentense)
+					// is not pipe (i.e. TTY)
+					fmt.Scan(&rawSentence)
 				} else {
 					// is pipe
-					pipeIn, err := ioutil.ReadAll(os.Stdin)
+					pipeIn, err := io.ReadAll(os.Stdin)
 					if err != nil {
 						return err
 					}
-					rawSentense = string(pipeIn)
+					rawSentence = string(pipeIn)
 				}
 			} else {
 				if c.NArg() >= 2 {
-					return fmt.Errorf("Cannot specify multiple file paths.")
+					return fmt.Errorf("cannot specify multiple file paths")
 				}
 				f, err := os.Open(c.Args().First())
 				if err != nil {
 					return err
 				}
-				b, err := ioutil.ReadAll(f)
+				b, err := io.ReadAll(f)
 				if err != nil {
 					return err
 				}
-				rawSentense = string(b)
+				rawSentence = string(b)
 			}
 
 			client := deepl.DeepLClient{
 				Endpoint: deepl.GetEndpoint(c.Bool("pro")),
 				AuthKey:  setting.AuthKey,
 			}
-			translateds, err := client.Translate(rawSentense, setting.SourceLang, setting.TargetLang)
+			translateds, err := client.Translate(rawSentence, setting.SourceLang, setting.TargetLang)
 			if err != nil {
 				return err
 			}

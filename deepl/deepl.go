@@ -3,7 +3,7 @@ package deepl
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 )
@@ -32,7 +32,7 @@ func (c *DeepLClient) Translate(text string, sourceLang string, targetLang strin
 	params.Add("source_lang", sourceLang)
 	params.Add("target_lang", targetLang)
 	params.Add("text", text)
-	resp, err := http.PostForm(c.Endpoint, params)
+	resp, _ := http.PostForm(c.Endpoint, params)
 
 	if err := ValidateResponse(resp); err != nil {
 		return []string{}, err
@@ -81,15 +81,15 @@ func ValidateResponse(resp *http.Response) error {
 
 func ParseResponse(resp *http.Response) (DeepLResponse, error) {
 	var responseJson DeepLResponse
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
+		err := fmt.Errorf("%s (occurred while parsing response)", err.Error())
 		return responseJson, err
 	}
 	err = json.Unmarshal(body, &responseJson)
 	if err != nil {
-		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
+		err := fmt.Errorf("%s (occurred while parsing response)", err.Error())
 		return responseJson, err
 	}
 	return responseJson, err

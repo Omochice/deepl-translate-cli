@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,7 +13,7 @@ func TestLoadsettings(t *testing.T) {
 	var errorText string
 
 	//
-	errorText = "The function should not overload SourceLang / TargetLang if eigher is not set."
+	errorText = "The function should not overload SourceLang / TargetLang if either is not set."
 	setting = Setting{
 		AuthKey:    "test",
 		SourceLang: "EN",
@@ -32,8 +31,8 @@ func TestLoadsettings(t *testing.T) {
 	}
 
 	//
-	errorText = "The function should occur error if AuthKey is not set."
-	expectedErrorText := "No deepl token is set." // DRY...
+	errorText = "There should occur an error on this function if AuthKey is not set."
+	expectedErrorText := "no DeepL token is set" // DRY...
 	setting = Setting{
 		AuthKey:    "",
 		SourceLang: "EN",
@@ -48,7 +47,7 @@ func TestLoadsettings(t *testing.T) {
 	}
 
 	//
-	errorText = "The function should occur error if SourceLang == TargetLang"
+	errorText = "There should occur an error on this function if SourceLang == TargetLang"
 	setting = Setting{
 		AuthKey:    "test",
 		SourceLang: "EN",
@@ -57,7 +56,7 @@ func TestLoadsettings(t *testing.T) {
 	}
 	actual, err = LoadSettings(setting, false)
 	if err == nil {
-		t.Fatalf(errorText+"\nInputed: %#v", setting)
+		t.Fatalf(errorText+"\nInput: %#v", setting)
 	}
 }
 
@@ -67,18 +66,18 @@ func Exists(filename string) bool {
 }
 
 func TestInitializeConfigFile(t *testing.T) {
-	dir, err := ioutil.TempDir("", "example")
+	dir, err := os.MkdirTemp("", "example")
 	if err != nil {
-		t.Fatalf("Error occurred in iotuil.Tempdir")
+		t.Fatalf("Error occurred in os.MkdirTemp")
 	}
 	defer os.RemoveAll(dir)
 	p := filepath.Join(dir, "config.json")
 
 	// will success
 	if err := InitializeConfigFile(p); err != nil {
-		t.Fatalf("The function should not occur error\nActual: %s", err.Error())
+		t.Fatalf("There should be no errors thrown by this function\nActual: %s", err.Error())
 	}
 	if !Exists(p) {
-		t.Fatalf("The function should make configfile(%s)", p)
+		t.Fatalf("The function should have created the config file: %q", p)
 	}
 }

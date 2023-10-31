@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -23,7 +23,7 @@ func TestValidateResponse(t *testing.T) {
 	testResponse := http.Response{
 		Status:     "200 test",
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewBuffer(testBody)),
+		Body:       io.NopCloser(bytes.NewBuffer(testBody)),
 	}
 
 	for c := 100; c < 512; c++ {
@@ -42,12 +42,13 @@ func TestValidateResponse(t *testing.T) {
 			continue
 		}
 		if err == nil {
-			t.Fatalf("If Status code is not 200 <= c < 300, should occur error\nStatus code: %d, Response: %v",
+			t.Fatalf("If Status code is not 200 <= c < 300, an error should occur\nStatus code: %d, Response: %v",
 				c, testResponse)
 		} else {
 			if !strings.Contains(err.Error(), http.StatusText(c)) {
 				errorText = fmt.Sprintf("Error text should include Status Code(%s)\nActual: %s",
 					http.StatusText(c), err.Error())
+					t.Fatalf("%s", errorText)	// was this missing?
 			}
 			if statusText, ok := KnownErrors[c]; ok { // errored
 				if !strings.Contains(err.Error(), statusText) {
@@ -62,7 +63,7 @@ func TestValidateResponse(t *testing.T) {
 	invalidResp := http.Response{
 		Status:     "444 not exists error",
 		StatusCode: 444,
-		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte("test"))),
+		Body:       io.NopCloser(bytes.NewBuffer([]byte("test"))),
 	}
 	err = ValidateResponse(&invalidResp)
 	if err == nil {
@@ -76,13 +77,13 @@ func TestValidateResponse(t *testing.T) {
 	validResp := http.Response{
 		Status:     "444 not exists error",
 		StatusCode: 444,
-		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(fmt.Sprintf(`{"message": "%s"}`, expectedMessage)))),
+		Body:       io.NopCloser(bytes.NewBuffer([]byte(fmt.Sprintf(`{"message": "%s"}`, expectedMessage)))),
 	}
 	err = ValidateResponse(&validResp)
 	if err == nil {
-		t.Fatalf("If is status code invalid, should occur error\nActual: %d", validResp.StatusCode)
+		t.Fatalf("If the status code is invalid, an error should occur\nActual: %d", validResp.StatusCode)
 	} else if !strings.HasSuffix(err.Error(), expectedMessage) {
-		t.Fatalf("If body is valid as json, error suffix should have `%s`\nActual: %s",
+		t.Fatalf("If the body is valid JSON, the error suffix should have `%s`\nActual: %s",
 			expectedMessage, err.Error())
 	}
 }
@@ -107,10 +108,10 @@ func TestParseResponse(t *testing.T) {
 		if err != nil {
 			t.Fatal("Error within json.Marshal")
 		}
-		baseResponse.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		baseResponse.Body = io.NopCloser(bytes.NewBuffer(b))
 		res, err := ParseResponse(&baseResponse)
 		if err != nil {
-			t.Fatalf("If input is valid, should not occur error\n%s", err.Error())
+			t.Fatalf("If the input is valid, no errors should occur\n%s", err.Error())
 		}
 
 		if len(res.Translations) != len(input["Translations"]) {
@@ -132,10 +133,10 @@ func TestParseResponse(t *testing.T) {
 		if err != nil {
 			t.Fatal("Error within json.Marshal")
 		}
-		baseResponse.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		baseResponse.Body = io.NopCloser(bytes.NewBuffer(b))
 		res, err := ParseResponse(&baseResponse)
 		if err != nil {
-			t.Fatalf("If input is valid, should not occur error\n%s", err.Error())
+			t.Fatalf("If the input is valid, no error should occur\n%s", err.Error())
 		}
 		if len(res.Translations) != len(input["Translations"]) {
 			t.Fatalf("Length of result.Translations should be equal to input.Translations\nExpected: %d\nActual: %d",
@@ -144,7 +145,7 @@ func TestParseResponse(t *testing.T) {
 		resType := reflect.ValueOf(res.Translations[0]).Type()
 		expectedNumOfField := 2
 		if resType.NumField() != expectedNumOfField {
-			t.Fatalf("Length of Translated's filed should be equal %d\nActual: %d", expectedNumOfField, resType.NumField())
+			t.Fatalf("Length of translated field should be equal to %d\nActual: %d", expectedNumOfField, resType.NumField())
 		}
 	}
 }
