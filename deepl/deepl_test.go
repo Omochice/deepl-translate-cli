@@ -33,7 +33,7 @@ func TestValidateResponse(t *testing.T) {
 		}
 		testResponse.Status = fmt.Sprintf("%d test", c)
 		testResponse.StatusCode = c
-		err := ValidateResponse(&testResponse)
+		err := validateResponse(&testResponse)
 		if c >= 200 && c < 300 {
 			errorText = "If status code is between 200 and 299, no error should be returned"
 			if err != nil {
@@ -42,7 +42,7 @@ func TestValidateResponse(t *testing.T) {
 			continue
 		}
 		if err == nil {
-			t.Fatalf("If Status code is not 200 <= c < 300, an error should occur\nStatus code: %d, Response: %v",
+			t.Fatalf("If status code is not 200 <= c < 300, an error should occur\nStatus code: %d, Response: %v",
 				c, testResponse)
 		} else {
 			if !strings.Contains(err.Error(), http.StatusText(c)) {
@@ -50,9 +50,9 @@ func TestValidateResponse(t *testing.T) {
 					http.StatusText(c), err.Error())
 					t.Fatalf("%s", errorText)	// was this missing?
 			}
-			statusText := StatusText(c) // errored
+			statusText := fmt.Sprintf("%d", c)	// NOTE: we want to make sure this is a string, not a (single) rune (gwyneth 20231101)
 			if !strings.Contains(err.Error(), statusText) {
-				errorText = fmt.Sprintf("If stasus code is knownd, the text should include it's error text\nExpected: %s\nActual: %s",
+				errorText = fmt.Sprintf("If status code is known, the text should include its error text\nExpected: %s\nActual: %s",
 					statusText, err.Error())
 				t.Fatalf("%s", errorText)
 			}
@@ -64,11 +64,11 @@ func TestValidateResponse(t *testing.T) {
 		StatusCode: 444,
 		Body:       io.NopCloser(bytes.NewBuffer([]byte("test"))),
 	}
-	err = ValidateResponse(&invalidResp)
+	err = validateResponse(&invalidResp)
 	if err == nil {
-		t.Fatalf("If status code is invalid, should occur error\nActual: %d", invalidResp.StatusCode)
+		t.Fatalf("If status code is invalid, an error should occur\nActual: %d", invalidResp.StatusCode)
 	} else if !strings.HasSuffix(err.Error(), "]") {
-		t.Fatalf("If body is invalid as json, error is formated as %s",
+		t.Fatalf("If body is invalid as JSON, error is formatted as %s",
 			"`Invalid response [statuscode statustext]`")
 	}
 
@@ -78,7 +78,7 @@ func TestValidateResponse(t *testing.T) {
 		StatusCode: 444,
 		Body:       io.NopCloser(bytes.NewBuffer([]byte(fmt.Sprintf(`{"message": "%s"}`, expectedMessage)))),
 	}
-	err = ValidateResponse(&validResp)
+	err = validateResponse(&validResp)
 	if err == nil {
 		t.Fatalf("If the status code is invalid, an error should occur\nActual: %d", validResp.StatusCode)
 	} else if !strings.HasSuffix(err.Error(), expectedMessage) {
@@ -87,7 +87,7 @@ func TestValidateResponse(t *testing.T) {
 	}
 }
 
-func TestParseResponse(t *testing.T) {
+func TestParseTranslationResponse(t *testing.T) {
 	baseResponse := http.Response{
 		Status:     "200 test",
 		StatusCode: 200,
@@ -108,14 +108,14 @@ func TestParseResponse(t *testing.T) {
 			t.Fatal("Error within json.Marshal")
 		}
 		baseResponse.Body = io.NopCloser(bytes.NewBuffer(b))
-		res, err := ParseResponse(&baseResponse)
+		res, err := parseResponse(baseResponse.Body)
 		if err != nil {
 			t.Fatalf("If the input is valid, no errors should occur\n%s", err.Error())
 		}
-
-		if len(res.Translations) != len(input["Translations"]) {
+		trans := res.(DeepLResponse)
+		if len(trans.Translations) != len(input["Translations"]) {
 			t.Fatalf("Length of result.Translations should be equal to input.Translations\nExpected: %d\nActual: %d",
-				len(res.Translations), len(input["Translations"]))
+				len(trans.Translations), len(input["Translations"]))
 		}
 	}
 	{
@@ -133,15 +133,16 @@ func TestParseResponse(t *testing.T) {
 			t.Fatal("Error within json.Marshal")
 		}
 		baseResponse.Body = io.NopCloser(bytes.NewBuffer(b))
-		res, err := ParseResponse(&baseResponse)
+		res, err := parseResponse(baseResponse.Body)
 		if err != nil {
 			t.Fatalf("If the input is valid, no error should occur\n%s", err.Error())
 		}
-		if len(res.Translations) != len(input["Translations"]) {
+		trans := res.(DeepLResponse)
+		if len(trans.Translations) != len(input["Translations"]) {
 			t.Fatalf("Length of result.Translations should be equal to input.Translations\nExpected: %d\nActual: %d",
-				len(res.Translations), len(input["Translations"]))
+				len(trans.Translations), len(input["Translations"]))
 		}
-		resType := reflect.ValueOf(res.Translations[0]).Type()
+		resType := reflect.ValueOf(trans.Translations[0]).Type()
 		expectedNumOfField := 2
 		if resType.NumField() != expectedNumOfField {
 			t.Fatalf("Length of translated field should be equal to %d\nActual: %d", expectedNumOfField, resType.NumField())
