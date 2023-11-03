@@ -112,7 +112,7 @@ func main() {
 	app := &cli.App{
 		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences.",
-		UsageText: "deepl-translate-cli [-s|-t] <inputfile>",
+		UsageText: "deepl-translate-cli trans [-s|-t] <inputfile>\ndeepl-translate-cli usage",
 		Version: fmt.Sprintf(
 			"%s (rev %s) [%s %s %s] [build at %s by %s]",
 			getVersion(),
@@ -148,7 +148,7 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:    "pro",
-				Usage:   "Use pro plan's endpoint",
+				Usage:   "Use Pro plan's endpoint?",
 				Value:   false,
 			},
 		},
@@ -245,7 +245,11 @@ func main() {
 						Endpoint: deepl.GetEndpoint(isPro) + "/usage",
 						AuthKey:  authKey,
 					}
-					fmt.Println(client.Usage())
+					s, err := client.Usage()
+					if err != nil {
+						return err
+					}
+					fmt.Println(s)
 					return nil
 				},
 			},

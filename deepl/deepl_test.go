@@ -108,11 +108,11 @@ func TestParseTranslationResponse(t *testing.T) {
 			t.Fatal("Error within json.Marshal")
 		}
 		baseResponse.Body = io.NopCloser(bytes.NewBuffer(b))
-		res, err := parseResponse(baseResponse.Body)
+		var trans DeepLResponse
+		err = parseResponse(baseResponse.Body, &trans)
 		if err != nil {
 			t.Fatalf("If the input is valid, no errors should occur\n%s", err.Error())
 		}
-		trans := res.(DeepLResponse)
 		if len(trans.Translations) != len(input["Translations"]) {
 			t.Fatalf("Length of result.Translations should be equal to input.Translations\nExpected: %d\nActual: %d",
 				len(trans.Translations), len(input["Translations"]))
@@ -133,11 +133,11 @@ func TestParseTranslationResponse(t *testing.T) {
 			t.Fatal("Error within json.Marshal")
 		}
 		baseResponse.Body = io.NopCloser(bytes.NewBuffer(b))
-		res, err := parseResponse(baseResponse.Body)
+		var trans DeepLResponse
+		err = parseResponse(baseResponse.Body, &trans)
 		if err != nil {
 			t.Fatalf("If the input is valid, no error should occur\n%s", err.Error())
 		}
-		trans := res.(DeepLResponse)
 		if len(trans.Translations) != len(input["Translations"]) {
 			t.Fatalf("Length of result.Translations should be equal to input.Translations\nExpected: %d\nActual: %d",
 				len(trans.Translations), len(input["Translations"]))

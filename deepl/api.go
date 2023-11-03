@@ -8,23 +8,25 @@ import (
 	"net/url"
 )
 
-// Generic API call, takes URL parameters, responds with a io.ReadCloser to the body, or error.
-// Closes the HTTP response that was opened.
-func (c *DeepLClient) apiCall(params url.Values) (any, error) {
+// Generic API call, takes URL parameters and a JSON object to fill,
+// validates & parses the response and unmarshals it into the JSON object,
+// or throws an error.
+// NOTE: Closes the HTTP response that was opened.
+func (c *DeepLClient) apiCall(params url.Values, jsonObject any) error {
 	resp, err := http.PostForm(c.Endpoint, params)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if err := validateResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
-	temp, err := parseResponse(resp.Body)
+	err = parseResponse(resp.Body, jsonObject)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return temp, nil
+	return nil
 }
 
 // Validates the response based on its status code, decoding the returned JSON.
@@ -37,6 +39,8 @@ func validateResponse(resp *http.Response) error {
 			resp.StatusCode,
 			statusText(resp.StatusCode))
 		// NOTE: code simplification, we now just use the "standard" error codes from `net/http`.
+		// NOTE: on the following code, @Omochice opted for skipping the traditional JSON object struct,
+		// going directly for the semi-raw map[string]interface{} reply instead. (gwyneth 20231103)
 		e := json.NewDecoder(resp.Body).Decode(&data)
 		if e != nil {
 			return fmt.Errorf("%s", baseErrorText)
@@ -50,18 +54,17 @@ func validateResponse(resp *http.Response) error {
 // Generic API response parser, returns whatever the JSON object was.
 // The jsonObject to be passed can be anything; returns error from parsing,
 // or nil if all's ok.
-func parseResponse(resp io.ReadCloser) (any, error) {
-	var jsonObject any
+func parseResponse(resp io.ReadCloser, jsonObject any) error {
 	body, err := io.ReadAll(resp)
 
 	if err != nil {
-		return []string{}, fmt.Errorf("%s (occurred while parsing response)", err.Error())
+		return fmt.Errorf("%s (occurred while parsing response)", err.Error())
 	}
 	err = json.Unmarshal(body, &jsonObject)
 	if err != nil {
-		return []string{}, fmt.Errorf("%s (occurred while parsing response)", err.Error())
+		return fmt.Errorf("%s (occurred while parsing response)", err.Error())
 	}
-	return jsonObject, nil
+	return nil
 }
 
 // Returns an error string based on the HTTP status code, as defined

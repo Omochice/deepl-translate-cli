@@ -30,12 +30,14 @@ func (c *DeepLClient) Translate(text string, sourceLang string, targetLang strin
 	params.Add("target_lang", targetLang)
 	params.Add("text", text)
 
-	parsed, err := c.apiCall(params)
+	var parsed DeepLResponse
+
+	err := c.apiCall(params, &parsed)
 	if err != nil {
 		return []string{}, err
 	}
 	r := []string{}
-	for _, translated := range parsed.(DeepLResponse).Translations {
+	for _, translated := range parsed.Translations {
 		r = append(r, translated.Text)
 	}
 	return r, nil
