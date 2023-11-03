@@ -112,7 +112,7 @@ func main() {
 	app := &cli.App{
 		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences.",
-		UsageText: "deepl-translate-cli [-s|-t][--pro] trans [--tag [xml|html]]<inputfile>\ndeepl-translate-cli usage\ndeepl-translate-cli languages [--type [source|target]]",
+		UsageText: "deepl-translate-cli [-s|-t][--pro] trans [--tag [xml|html]]<inputfile>\ndeepl-translate-cli usage\ndeepl-translate-cli languages [--type=[source|target]]",
 		Version: fmt.Sprintf(
 			"%s (rev %s) [%s %s %s] [build at %s by %s]",
 			getVersion(),
