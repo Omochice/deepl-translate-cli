@@ -9,8 +9,9 @@ type DeepL interface {
 }
 
 type DeepLClient struct {
-	Endpoint string		// API endpoint, which differs between the Free and the Pro plans.
-	AuthKey  string		// API token, looks like a UUID with ":fx" appended to it.
+	Endpoint		string	// API endpoint, which differs between the Free and the Pro plans.
+	AuthKey			string	// API token, looks like a UUID with ":fx" appended to it.
+	LanguagesType	string	// For the "languages" utility call, either "source" or "target".
 }
 
 type DeepLResponse struct {

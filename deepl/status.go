@@ -2,7 +2,7 @@
 package deepl
 
 import (
-//	"encoding/json"
+	//	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -38,4 +38,40 @@ func (c *DeepLClient) Usage() (string, error) {
 		resp.TeamDocumentLimit,
 		resp.TeamDocumentCount),
 	nil
+}
+
+// The /languages API call returns an array of language/name pairs and a flag
+// indicating if this language has support for formal/informal differences.
+type DeepLLanguagesResponse struct {
+	Language			string	`json:"language"`
+	Name				string	`json:"name"`
+	SupportsFormality	bool	`json:"supports_formality"`
+}
+
+// Retrieve Supported Languages —
+// Retrieve the list of languages that are currently supported for translation, either as source or target language, respectively.
+func (c *DeepLClient) Languages() (string, error) {
+	params := url.Values{}
+	params.Add("auth_key", c.AuthKey)
+	// note: translationType was already parsed
+	if len(c.LanguagesType) > 0 {
+		params.Add("type", c.LanguagesType)
+	}
+
+	var langs []DeepLLanguagesResponse
+
+	err := c.apiCall(params, &langs)
+	if err != nil {
+		return "", err
+	}
+
+	var r string
+	for _, lang := range langs {
+		r += lang.Language + ": " + lang.Name
+		if lang.SupportsFormality {
+			r += " (+ formality)"
+		}
+		r += "\n"
+	}
+	return r, nil
 }

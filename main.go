@@ -112,7 +112,7 @@ func main() {
 	app := &cli.App{
 		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences.",
-		UsageText: "deepl-translate-cli trans [-s|-t] <inputfile>\ndeepl-translate-cli usage",
+		UsageText: "deepl-translate-cli [-s|-t][--pro] trans [--tag [xml|html]]<inputfile>\ndeepl-translate-cli usage\ndeepl-translate-cli languages [--type [source|target]]",
 		Version: fmt.Sprintf(
 			"%s (rev %s) [%s %s %s] [build at %s by %s]",
 			getVersion(),
@@ -228,16 +228,8 @@ func main() {
 			{
 				Name:        "usage",
 				Aliases:     []string{"u"},
-				Usage:       "Check Usage and Limits",
+				Usage:       "Check usage and limits",
 				Description: "Retrieve usage information within the current billing period together with the corresponding account limits.",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:        "fake",
-						Aliases:     []string{"f"},
-						Usage:       "fake flag, ignore",
-						Value:       "blah",
-					},
-				},
 				Action: func(c *cli.Context) error {
 					authKey := os.Getenv("DEEPL_TOKEN")
 					isPro	:= c.Bool("pro")
@@ -253,7 +245,45 @@ func main() {
 					return nil
 				},
 			},
-
+			{
+				Name:        "languages",
+				// Aliases:     []string{"l"},
+				Usage:       "Retrieve supported languages",
+				Description: "Retrieve the list of languages that are currently supported for translation, either as source or target language, respectively.",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:        "type",
+						Usage:       "`TYPE` sets whether source or target languages should be listed. Possible options are:\n`source`: For languages that can be used in the `source_lang` parameter of translate requests.\n`target`: For languages that can be used in the `target_lang` parameter of translate requests.\n",
+						Value:       "source",
+						DefaultText: "source",
+						Action: func(c *cli.Context, v string) error {
+							switch v {
+								case "source":
+									fallthrough
+								case "target":
+									return nil
+								default:
+									return fmt.Errorf("type must be either `source` or `target` (got: %s)", v)
+							}
+						},
+					},
+				},
+				Action: func(c *cli.Context) error {
+					authKey := os.Getenv("DEEPL_TOKEN")
+					isPro	:= c.Bool("pro")
+					client := deepl.DeepLClient{
+						Endpoint:		deepl.GetEndpoint(isPro) + "/languages",
+						AuthKey:  		authKey,
+						LanguagesType:	c.String("type"),
+					}
+					s, err := client.Languages()
+					if err != nil {
+						return err
+					}
+					fmt.Println(s)
+					return nil
+				},
+			},
 		},
 	}
 	err := app.Run(os.Args)
