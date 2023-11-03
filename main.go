@@ -13,7 +13,6 @@ import (
 	"runtime/debug"
 
 	"github.com/Omochice/deepl-translate-cli/deepl"
-
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v2"
 )
@@ -127,78 +126,130 @@ func main() {
 		Authors: []*cli.Author{
 			{
 				Name: "Omochice",
+				Email: "somewhere@here.jp",
+			},
+			{
+				Name: "Gwyneth Llewelyn",
+				Email: "gwyneth.llewelyn@gwynethllewelyn.net",
 			},
 		},
-
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "source_lang",
 				Aliases: []string{"s"},
 				Usage:   "Set source language without using the settings file",
+				Value:	 "EN",
 			},
-
 			&cli.StringFlag{
 				Name:    "target_lang",
 				Aliases: []string{"t"},
 				Usage:   "Set target language without using the settings file",
+				Value:	 "JA",
 			},
 			&cli.BoolFlag{
-				Name:  "pro",
-				Usage: "Use pro plan's endpoint",
+				Name:    "pro",
+				Usage:   "Use pro plan's endpoint",
+				Value:   false,
 			},
 		},
-		Action: func(c *cli.Context) error {
-			setting, err := LoadSettings(Setting{
-				SourceLang: c.String("source_lang"),
-				TargetLang: c.String("target_lang"),
-				AuthKey:    os.Getenv("DEEPL_TOKEN"),
-				IsPro:      c.Bool("pro"),
-			}, true)
-			if err != nil {
-				return err
-			}
-
-			var rawSentence string
-			if c.NArg() == 0 {
-				// no filename path passed; read from STDIN (TTY or pipe)
-				if isatty.IsTerminal(os.Stdin.Fd()) {
-					// is not pipe (i.e. TTY)
-					fmt.Scan(&rawSentence)
-				} else {
-					// is pipe
-					pipeIn, err := io.ReadAll(os.Stdin)
+		Commands: []*cli.Command{
+			{
+				Name:        "translate",
+				Aliases:     []string{"trans"},
+				Usage:       "Basic translation of a set of Unicode strings into another language",
+				Description: "(No description set yet)",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:        "tag_handling",
+						Usage:       "Set to XML or HTML in order to do more advanced parsing (empty means just using the plain text variant)",
+						Aliases:     []string{"tag"},
+						Value:       "",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					setting, err := LoadSettings(Setting{
+						SourceLang: c.String("source_lang"),
+						TargetLang: c.String("target_lang"),
+						AuthKey:    os.Getenv("DEEPL_TOKEN"),
+						IsPro:      c.Bool("pro"),
+					}, true)
 					if err != nil {
 						return err
 					}
-					rawSentence = string(pipeIn)
-				}
-			} else {
-				if c.NArg() >= 2 {
-					return fmt.Errorf("cannot specify multiple file paths")
-				}
-				f, err := os.Open(c.Args().First())
-				if err != nil {
-					return err
-				}
-				b, err := io.ReadAll(f)
-				if err != nil {
-					return err
-				}
-				rawSentence = string(b)
-			}
 
-			client := deepl.DeepLClient{
-				Endpoint: deepl.GetEndpoint(c.Bool("pro")),
-				AuthKey:  setting.AuthKey,
-			}
-			translateds, err := client.Translate(rawSentence, setting.SourceLang, setting.TargetLang)
-			if err != nil {
-				return err
-			}
-			for _, translated := range translateds {
-				fmt.Print(translated)
-			}
-			return nil
+					var rawSentence string
+					if c.NArg() == 0 {
+						// no filename path passed; read from STDIN (TTY or pipe)
+						if isatty.IsTerminal(os.Stdin.Fd()) {
+							// is not pipe (i.e. TTY)
+							// NOTE: This seems not to work very well...(gwyneth 20231101)
+							fmt.Scan(&rawSentence)
+						} else {
+							// is pipe
+							pipeIn, err := io.ReadAll(os.Stdin)
+							if err != nil {
+								return err
+							}
+							rawSentence = string(pipeIn)
+						}
+					} else {
+						if c.NArg() >= 2 {
+							return fmt.Errorf("cannot specify multiple file paths")
+						}
+						f, err := os.Open(c.Args().First())
+						if err != nil {
+							return err
+						}
+						b, err := io.ReadAll(f)
+						if err != nil {
+							return err
+						}
+						rawSentence = string(b)
+					}
+
+					client := deepl.DeepLClient{
+						Endpoint: deepl.GetEndpoint(c.Bool("pro")) + "/translate",
+						AuthKey:  setting.AuthKey,
+					}
+
+					if c.String("tag_handling") == "" {
+						translateds, err := client.Translate(rawSentence, setting.SourceLang, setting.TargetLang)
+						if err != nil {
+							return err
+						}
+						for _, translated := range translateds {
+							fmt.Print(translated)
+						}
+						return nil
+					}
+					return fmt.Errorf("tag_handling not implemented yet")
+				},
+			},
+			{
+				Name:        "usage",
+				Aliases:     []string{"u"},
+				Usage:       "Check Usage and Limits",
+				Description: "Retrieve usage information within the current billing period together with the corresponding account limits.",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:        "fake",
+						Aliases:     []string{"f"},
+						Usage:       "fake flag, ignore",
+						Value:       "blah",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					authKey := os.Getenv("DEEPL_TOKEN")
+					isPro	:= c.Bool("pro")
+					client := deepl.DeepLClient{
+						Endpoint: deepl.GetEndpoint(isPro) + "/usage",
+						AuthKey:  authKey,
+					}
+					fmt.Println(client.Usage())
+					return nil
+				},
+			},
+
 		},
 	}
 	err := app.Run(os.Args)

@@ -1,10 +1,6 @@
 package deepl
 
 import (
-	// "encoding/json"
-	// "fmt"
-	// "io"
-	// "net/http"
 	"net/url"
 )
 
@@ -45,10 +41,10 @@ func (c *DeepLClient) Translate(text string, sourceLang string, targetLang strin
 	return r, nil
 }
 
-// Returns the DeepL API endpoint for either the Free or the Pro Plan (if IsPro is true).
+// Returns the base DeepL API endpoint for either the Free or the Pro Plan (if IsPro is true).
 func GetEndpoint(isPro bool) string {
 	if isPro {
-		return "https://api.deepl.com/v2/translate"
+		return "https://api.deepl.com/v2"
 	}
-	return "https://api-free.deepl.com/v2/translate"
+	return "https://api-free.deepl.com/v2"
 }
