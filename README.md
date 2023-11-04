@@ -23,14 +23,14 @@ go install github.com/Omochice/deepl-translate-cli@latest
 
 ## Usage
 
-1. Get a DeepL access token from [here](https://www.deepl.com/docs-api).
+1. Get a DeepL access token from [here](https://www.deepl.com/docs-api). It looks like a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) with the characters `:fx` appended to it. 
 
 2. Set access token as `DEEPL_TOKEN` environment variable.
 
     e.g., in `bash`:
 
     ```bash
-    export DEEPL_TOKEN <YOUR TOKEN>
+    export DEEPL_TOKEN=<YOUR TOKEN>
     ```
 
 3. On the first run, if `<user home directory>/.config/deepl-translate-cli/setting.json` does not exist, it gets automatically created.
@@ -62,7 +62,15 @@ go install github.com/Omochice/deepl-translate-cli@latest
 
     ```console
     cat <text.txt> | deepl-translate-cli --pro
-    ```
+	
+## Shell autocompletion (⚠️ experimental)
+
+Under the `autocomplete` folder are three scripts to enable auto-completion (for `bash`, `zsh`, and PowerShell). To use these, do the following (the example is for `bash`):
+
+```sh
+PROG=deepl-translate-cli source autocomplete/bash_autocomplete
+```
+
 ## ⚠️ Warning! ⚠️
 
 If you run the tests, these may actually use your API Token, and consume some of your monthly credits!
