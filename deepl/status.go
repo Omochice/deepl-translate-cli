@@ -4,6 +4,7 @@ package deepl
 import (
 	//	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 )
 
@@ -24,7 +25,7 @@ func (c *DeepLClient) Usage() (string, error) {
 
 	var resp DeepLUsageResponse
 
-	err := c.apiCall(params, &resp)
+	err := c.apiCall(http.MethodPost, params, &resp)
 	if err != nil {
 		return "", err
 	}
@@ -60,7 +61,7 @@ func (c *DeepLClient) Languages() (string, error) {
 
 	var langs []DeepLLanguagesResponse
 
-	err := c.apiCall(params, &langs)
+	err := c.apiCall(http.MethodPost, params, &langs)
 	if err != nil {
 		return "", err
 	}
@@ -72,6 +73,38 @@ func (c *DeepLClient) Languages() (string, error) {
 			r += " (+ formality)"
 		}
 		r += "\n"
+	}
+	return r, nil
+}
+
+
+// Structure for getting an array of glossary pairs of supported languages
+type DeepLGlossaryPairsResponse struct {
+	SupportedLanguages []GlossaryPair	`json:"supported_languages"`
+}
+
+// One pair of supported glossarary languages.
+type GlossaryPair struct {
+	SourceLang string `json:"source_lang"`
+	TargetLang string `json:"target_lang"`
+}
+
+// List language pairs supported by glossaries —
+// Retrieve the list of language pairs supported by the glossary feature.
+func (c *DeepLClient) GlossaryLanguagePairs() (string, error) {
+	params := url.Values{}
+	params.Add("auth_key", c.AuthKey)
+
+	var langPairs DeepLGlossaryPairsResponse
+
+	err := c.apiCall(http.MethodGet, params, &langPairs)
+	if err != nil {
+		return "", err
+	}
+
+	var r string
+	for _, langPair := range langPairs.SupportedLanguages {
+		r += langPair.SourceLang + " ⇒ " + langPair.TargetLang + "\n"
 	}
 	return r, nil
 }

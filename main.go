@@ -101,9 +101,10 @@ type Setting struct {
 }
 
 // Open the settings file, or, if it doesn't exist, create it first.
+// TODO: Probably change all this to use github.com/urfave/cli-altsrc instead.
 func LoadSettings(setting Setting, automake bool) (Setting, error) {
 	if setting.AuthKey == "" {
-		return setting, fmt.Errorf("no DeepL token is set")
+		return setting, fmt.Errorf("no DeepL token is set; use the environment variable `DEEPL_TOKEN` to set it")
 	}
 
 	if setting.TargetLang == "" || setting.SourceLang == "" {
@@ -173,9 +174,29 @@ func main() {
 	// Set up the version/runtime/debug-related variables, and cache them:
 	initVersionInfo()
 
+	// Test if the authentication can work or not, depending if we got the token
+	// set as an environment variable.
+	deeplToken, ok := os.LookupEnv("DEEPL_TOKEN")
+	if !ok {
+		fmt.Println("Please set first your DeepL authentication key using the environment variable DEEPL_TOKEN.")
+		os.Exit(1)
+	}
+
+	// Configure all settings from the very start, because we need the authkey & endpoint
+	// for all other calls, not just translations.
+	setting, err := LoadSettings(
+		Setting{
+			AuthKey: deeplToken,
+		},
+		true)
+	if err != nil {
+		fmt.Printf("cannot init settings, error was: %q\n", err)
+		os.Exit(1)
+	}
+
 	app := &cli.App{
 		Name:      "deepl-translate-cli",
-		Usage:     "Translate sentences.",
+		Usage:     "Translate sentences, using the DeepL API.",
 		UsageText: "deepl-translate-cli [-s|-t][--pro] trans [--tag [xml|html]] <inputfile>\ndeepl-translate-cli usage\ndeepl-translate-cli languages [--type=[source|target]]\ndeepl-translate-cli glossary-language-pairs",
 		Version: fmt.Sprintf(
 			"%s (rev %s) [%s %s %s] [build at %s by %s]",
@@ -200,7 +221,7 @@ func main() {
 				Email: "gwyneth.llewelyn@gwynethllewelyn.net",
 			},
 		},
-		Copyright: "© 2021-2023 by Omochice. All rights reserved. Freely distributed under a MIT license.",
+		Copyright: "© 2021-2023 by Omochice. All rights reserved. Freely distributed under a MIT license.\nThis software is not affiliated nor endorsed by DeepL SE.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "source_lang",
@@ -225,7 +246,7 @@ func main() {
 				Name:        "translate",
 				Aliases:     []string{"trans"},
 				Usage:       "Basic translation of a set of Unicode strings into another language",
-				Description: "(No description set yet)",
+				Description: "Text to be translated. Only UTF-8-encoded plain text is supported. The parameter may be specified multiple times and translations are returned in the same order as they are requested. Each of the parameter values may contain multiple sentences. Up to 50 texts can be sent for translation in one request.",
 				Category:	 "Translations",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -236,16 +257,15 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					setting, err := LoadSettings(Setting{
-						SourceLang: c.String("source_lang"),
-						TargetLang: c.String("target_lang"),
-						AuthKey:    os.Getenv("DEEPL_TOKEN"),
-						IsPro:      c.Bool("pro"),
-					}, true)
-					if err != nil {
-						return err
+					if c.String("source_lang") != "" {
+						setting.SourceLang = c.String("source_lang")
 					}
-
+					if c.String("target_lang") != "" {
+						setting.TargetLang = c.String("target_lang")
+					}
+					if c.Bool("pro") {
+						setting.IsPro = true
+					}
 					var rawSentence string
 					if c.NArg() == 0 {
 						// no filename path passed; read from STDIN (TTY or pipe)
@@ -301,11 +321,9 @@ func main() {
 				Description: "Retrieve usage information within the current billing period together with the corresponding account limits.",
 				Category:	 "Utilities",
 				Action: func(c *cli.Context) error {
-					authKey := os.Getenv("DEEPL_TOKEN")
-					isPro	:= c.Bool("pro")
 					client := deepl.DeepLClient{
-						Endpoint: deepl.GetEndpoint(isPro) + "/usage",
-						AuthKey:  authKey,
+						Endpoint: deepl.GetEndpoint(c.Bool("pro")) + "/usage",
+						AuthKey:  setting.AuthKey,
 					}
 					s, err := client.Usage()
 					if err != nil {
@@ -340,11 +358,9 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					authKey := os.Getenv("DEEPL_TOKEN")
-					isPro	:= c.Bool("pro")
 					client := deepl.DeepLClient{
-						Endpoint:		deepl.GetEndpoint(isPro) + "/languages",
-						AuthKey:  		authKey,
+						Endpoint:		deepl.GetEndpoint(c.Bool("pro")) + "/languages",
+						AuthKey:  		setting.AuthKey,
 						LanguagesType:	c.String("type"),
 					}
 					s, err := client.Languages()
@@ -362,11 +378,9 @@ func main() {
 				Description: "Retrieve the list of language pairs supported by the glossary feature.",
 				Category:	 "Glossary",
 				Action: func(c *cli.Context) error {
-					authKey := os.Getenv("DEEPL_TOKEN")
-					isPro	:= c.Bool("pro")
 					client := deepl.DeepLClient{
-						Endpoint:		deepl.GetEndpoint(isPro) + "/glossary-language-pairs",
-						AuthKey:  		authKey,
+						Endpoint:		deepl.GetEndpoint(c.Bool("pro")) + "/glossary-language-pairs",
+						AuthKey:  		setting.AuthKey,
 					}
 					s, err := client.GlossaryLanguagePairs()
 					if err != nil {
@@ -376,10 +390,9 @@ func main() {
 					return nil
 				},
 			},
-
 		},
 	}
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}

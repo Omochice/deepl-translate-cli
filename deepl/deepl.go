@@ -1,6 +1,7 @@
 package deepl
 
 import (
+	"net/http"
 	"net/url"
 )
 
@@ -19,8 +20,8 @@ type DeepLResponse struct {
 }
 
 type Translated struct {
-	DetectedSourceLaguage string `json:"detected_source_language"`
-	Text                  string `json:"text"`
+	DetectedSourceLanguage	string `json:"detected_source_language"`
+	Text                 	string `json:"text"`
 }
 
 // API call to translate text from sourceLang to targetLang.
@@ -33,7 +34,7 @@ func (c *DeepLClient) Translate(text string, sourceLang string, targetLang strin
 
 	var parsed DeepLResponse
 
-	err := c.apiCall(params, &parsed)
+	err := c.apiCall(http.MethodPost, params, &parsed)
 	if err != nil {
 		return []string{}, err
 	}

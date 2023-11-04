@@ -6,14 +6,24 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
-// Generic API call, takes URL parameters and a JSON object to fill,
+// Generic API call, takes method, URL parameters and a JSON object to fill,
 // validates & parses the response and unmarshals it into the JSON object,
 // or throws an error.
 // NOTE: Closes the HTTP response that was opened.
-func (c *DeepLClient) apiCall(params url.Values, jsonObject any) error {
-	resp, err := http.PostForm(c.Endpoint, params)
+func (c *DeepLClient) apiCall(method string, params url.Values, jsonObject any) error {
+	// http.PostForm() unfortunately doesn't allow us to set headers, and we need to send the authorization
+	// in the headers, not in the body... (gwyneth 20231104)
+	client := &http.Client{}
+	req, err := http.NewRequest(method, c.Endpoint, strings.NewReader(params.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Authorization", "DeepL-Auth-Key " + c.AuthKey)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
