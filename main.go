@@ -11,32 +11,88 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"time"
 
 	"github.com/Omochice/deepl-translate-cli/deepl"
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v2"
 )
 
-// These strings will be retrieved by a call to debug.ReadBuildInfo().
-var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
-	buildBy = "unknown"
-)
-
-// Shows the version embedded in the binary.
-func getVersion() string {
-	if version != "" {
-		return version
-	}
-	i, ok := debug.ReadBuildInfo()
-	if !ok {
-		return "unknown"
-	}
-	return i.Main.Version
+// versionInfoType holds the relevant information for this build.
+// it is meant to be used as a cache.
+type versionInfoType struct {
+	version		string		// Runtime version.
+	commit  	string		// Commit revision number.
+	dateString 	string		// Commit revision time (as a RFC3339 string).
+	date		time.Time	// Same as before, converted to a time.Time, because that's what the cli package uses.
+	builtBy 	string		// User who built this (see note).
+	goOS		string		// Operating system for this build (from runtime).
+	goARCH		string		// Architecture, i.e., CPU type (from runtime)
+	goVersion	string		// Go version used to compile this build (from runtime)
+	init		bool		// Have we already initialised the cache object?
 }
 
+// NOTE: I don't know where the "builtBy" information comes from, so, right now, it gets injected
+// during build time, e.g. `go build -ldflags "-X main.TheBuilder=gwyneth"` (gwyneth 20231103)
+
+var (
+	versionInfo versionInfoType	// cached values for this build.
+	TheBuilder string			// to be overwritten via the linker command `go build -ldflags "-X main.TheBuilder=gwyneth"`.
+)
+
+// Initialises the versionInfo variable.
+func initVersionInfo() error {
+	if versionInfo.init {
+		// already initialised, no need to do anything else!
+		return nil
+	}
+	// get the following entries from the runtime:
+	versionInfo.goOS		= runtime.GOOS
+	versionInfo.goARCH		= runtime.GOARCH
+	versionInfo.goVersion	= runtime.Version()
+
+	// attempt to get some build info as well:
+	buildInfo, ok := debug.ReadBuildInfo()
+	if !ok {
+		return fmt.Errorf("no valid build information found")
+	}
+	versionInfo.version = buildInfo.Main.Version
+
+	// Now dig through settings and extract what we can...
+
+	var vcs, rev string // Name of the version control system name (very likely Git) and the revision.
+	for _, setting := range buildInfo.Settings {
+		switch setting.Key {
+			case "vcs":
+				vcs = setting.Value
+			case "vcs.revision":
+				rev = setting.Value
+			case "vcs.time":
+				versionInfo.dateString = setting.Value
+		}
+	}
+	versionInfo.commit = "unknown"
+	if vcs != "" {
+		versionInfo.commit = vcs
+	}
+	if rev != "" {
+		versionInfo.commit += " [" + rev + "]"
+	}
+	// attempt to parse the date, which comes as a string in RFC3339 format, into a date.Time:
+	versionInfo.date, _ = time.Parse(versionInfo.dateString, time.RFC3339)
+	// we can safely ignore the parsing error: either the conversion works, or it doesn't, and we
+	// cannot do anything about it... (gwyneth 20231103)
+
+	// NOTE: I have no idea where the "builtBy" info is supposed to come from;
+	// the way I do it is to force the variable with a compile-time option. (gwyneth 20231103)
+	versionInfo.builtBy = TheBuilder
+
+	return nil
+}
+
+// Internal settings, to be filled by LoadSettings().
+// NOTE: This might become utterly different if we implement settings stored via
+// the github.com/urfave/cli-altsrc package. (gwyneth 20231103)
 type Setting struct {
 	AuthKey    string `json:"-"`
 	SourceLang string `json:"source_lang"`
@@ -82,7 +138,8 @@ func LoadSettings(setting Setting, automake bool) (Setting, error) {
 	return setting, nil
 }
 
-// Attempts to create the directory for the configuration file, with a
+// Attempts to create the directory for the configuration file, with a minimalist configurztion if successful.
+// If creating the directory (or the file within) fails, then abort and return error.
 func InitializeConfigFile(ConfigPath string) error {
 	if err := os.MkdirAll(filepath.Dir(ConfigPath), 0755); err != nil {
 		return err
@@ -108,21 +165,31 @@ func InitializeConfigFile(ConfigPath string) error {
 	return nil
 }
 
+// TODO: Try to use "github.com/urfave/cli/v3" in the future...
+// TODO: @urfave has his own library to deal with configuration files, cli-altsrc.
+//       It's obscure and sparsely documented (see ).
+//       But it's probably far more flexible than the simplistic scheme used here. (gwyneth 20231103)
 func main() {
+	// Set up the version/runtime/debug-related variables, and cache them:
+	initVersionInfo()
+
 	app := &cli.App{
 		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences.",
-		UsageText: "deepl-translate-cli [-s|-t][--pro] trans [--tag [xml|html]]<inputfile>\ndeepl-translate-cli usage\ndeepl-translate-cli languages [--type=[source|target]]",
+		UsageText: "deepl-translate-cli [-s|-t][--pro] trans [--tag [xml|html]] <inputfile>\ndeepl-translate-cli usage\ndeepl-translate-cli languages [--type=[source|target]]\ndeepl-translate-cli glossary-language-pairs",
 		Version: fmt.Sprintf(
 			"%s (rev %s) [%s %s %s] [build at %s by %s]",
-			getVersion(),
-			commit,
-			runtime.GOOS,
-			runtime.GOARCH,
-			runtime.Version(),
-			date,
-			buildBy,
+			versionInfo.version,
+			versionInfo.commit,
+			versionInfo.goOS,
+			versionInfo.goARCH,
+			versionInfo.goVersion,
+			versionInfo.dateString,		// Date as string in RFC3339 notation.
+			versionInfo.builtBy,		// see note at the top...
 		),
+		DefaultCommand: "translate",	// to avoid brealing compatibility with earlier versions.
+		EnableBashCompletion: true,
+		Compiled: versionInfo.date,		// Converted from RFC333
 		Authors: []*cli.Author{
 			{
 				Name: "Omochice",
@@ -133,6 +200,7 @@ func main() {
 				Email: "gwyneth.llewelyn@gwynethllewelyn.net",
 			},
 		},
+		Copyright: "© 2021-2023 by Omochice. All rights reserved. Freely distributed under a MIT license.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "source_lang",
@@ -158,6 +226,7 @@ func main() {
 				Aliases:     []string{"trans"},
 				Usage:       "Basic translation of a set of Unicode strings into another language",
 				Description: "(No description set yet)",
+				Category:	 "Translations",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:        "tag_handling",
@@ -230,6 +299,7 @@ func main() {
 				Aliases:     []string{"u"},
 				Usage:       "Check usage and limits",
 				Description: "Retrieve usage information within the current billing period together with the corresponding account limits.",
+				Category:	 "Utilities",
 				Action: func(c *cli.Context) error {
 					authKey := os.Getenv("DEEPL_TOKEN")
 					isPro	:= c.Bool("pro")
@@ -250,6 +320,7 @@ func main() {
 				// Aliases:     []string{"l"},
 				Usage:       "Retrieve supported languages",
 				Description: "Retrieve the list of languages that are currently supported for translation, either as source or target language, respectively.",
+				Category:	 "Utilities",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:        "type",
@@ -284,6 +355,28 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name:        "glossary-language-pairs",
+				// Aliases:     []string{"l"},
+				Usage:       "List language pairs supported by glossaries",
+				Description: "Retrieve the list of language pairs supported by the glossary feature.",
+				Category:	 "Glossary",
+				Action: func(c *cli.Context) error {
+					authKey := os.Getenv("DEEPL_TOKEN")
+					isPro	:= c.Bool("pro")
+					client := deepl.DeepLClient{
+						Endpoint:		deepl.GetEndpoint(isPro) + "/glossary-language-pairs",
+						AuthKey:  		authKey,
+					}
+					s, err := client.GlossaryLanguagePairs()
+					if err != nil {
+						return err
+					}
+					fmt.Println(s)
+					return nil
+				},
+			},
+
 		},
 	}
 	err := app.Run(os.Args)
