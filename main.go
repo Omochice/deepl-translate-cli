@@ -171,33 +171,13 @@ func InitializeConfigFile(ConfigPath string) error {
 //       It's obscure and sparsely documented (see ).
 //       But it's probably far more flexible than the simplistic scheme used here. (gwyneth 20231103)
 func main() {
-	// Set up the version/runtime/debug-related variables, and cache them:
-	initVersionInfo()
-
-	// Test if the authentication can work or not, depending if we got the token
-	// set as an environment variable.
-	deeplToken, ok := os.LookupEnv("DEEPL_TOKEN")
-	if !ok {
-		fmt.Println("Please set first your DeepL authentication key using the environment variable DEEPL_TOKEN.")
-		os.Exit(1)
-	}
-
-	// Configure all settings from the very start, because we need the authkey & endpoint
-	// for all other calls, not just translations.
-	setting, err := LoadSettings(
-		Setting{
-			AuthKey: deeplToken,
-		},
-		true)
-	if err != nil {
-		fmt.Printf("cannot init settings, error was: %q\n", err)
-		os.Exit(1)
-	}
+	// Global settings for this cli app.
+	var setting Setting
 
 	app := &cli.App{
 		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences, using the DeepL API.",
-		UsageText: "deepl-translate-cli [-s|-t][--pro] trans [--tag [xml|html]] <inputfile>\ndeepl-translate-cli usage\ndeepl-translate-cli languages [--type=[source|target]]\ndeepl-translate-cli glossary-language-pairs",
+		UsageText: "deepl-translate-cli [-s|-t][--pro] trans [--tag_handling [xml|html]] <inputfile>\ndeepl-translate-cli usage\ndeepl-translate-cli languages [--type=[source|target]]\ndeepl-translate-cli glossary-language-pairs",
 		Version: fmt.Sprintf(
 			"%s (rev %s) [%s %s %s] [build at %s by %s]",
 			versionInfo.version,
@@ -222,6 +202,34 @@ func main() {
 			},
 		},
 		Copyright: "© 2021-2023 by Omochice. All rights reserved. Freely distributed under a MIT license.\nThis software is not affiliated nor endorsed by DeepL SE.",
+		Before: func(c *cli.Context) error {
+			// Set up the version/runtime/debug-related variables, and cache them:
+			initVersionInfo()
+
+			// Test if the authentication can work or not, depending if we got the token
+			// set as an environment variable.
+			deeplToken, ok := os.LookupEnv("DEEPL_TOKEN")
+			if !ok {
+				// fmt.Fprintln(os.Stderr, "Please set first your DeepL authentication key using the environment variable DEEPL_TOKEN.")
+				// os.Exit(1)	// NOTE: the cli.Exit() function cannot be used here, because cli is not initialized yet.
+				return cli.Exit(fmt.Sprintln("Please set first your DeepL authentication key using the environment variable DEEPL_TOKEN."), 1)
+			}
+			var err error
+			// Configure all settings from the very start, because we need the authkey & endpoint
+			// for all other calls, not just translations.
+			setting, err = LoadSettings(
+				Setting{
+					AuthKey: deeplToken,
+				},
+				true)
+			if err != nil {
+				// fmt.Fprintf(os.Stderr, "cannot init settings, error was: %q", err)
+				// os.Exit(1)
+				return cli.Exit(fmt.Sprintf("cannot init settings, error was: %q", err), 1)
+			}
+
+			return nil
+		},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "source_lang",
@@ -246,7 +254,7 @@ func main() {
 				Name:        "translate",
 				Aliases:     []string{"trans"},
 				Usage:       "Basic translation of a set of Unicode strings into another language",
-				Description: "Text to be translated. Only UTF-8-encoded plain text is supported. The parameter may be specified multiple times and translations are returned in the same order as they are requested. Each of the parameter values may contain multiple sentences. Up to 50 texts can be sent for translation in one request.",
+				Description: "Text to be translated.\nOnly UTF-8-encoded plain text is supported. May contain multiple sentences, but the total request body size must not exceed 128 KiB (128 · 1024 bytes).\n Please split up your text into multiple	calls if it exceeds this limit.",
 				Category:	 "Translations",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -254,6 +262,66 @@ func main() {
 						Usage:       "Set to XML or HTML in order to do more advanced parsing (empty means just using the plain text variant)",
 						Aliases:     []string{"tag"},
 						Value:       "",
+						Action: func(c *cli.Context, v string) error {
+							switch v {
+								case "xml", "html":
+									return nil
+								default:
+									return fmt.Errorf("tag_handling must be either `xml` or `html` (got: %s)", v)
+							}
+						},
+					},
+					&cli.StringFlag{
+						Name:        "split_sentences",
+						Usage:       "Sets whether the translation engine should first split the input into sentences. For text translations where `tag_handling` is not set to `html`, the default value is `1`, meaning the engine splits on punctuation and on newlines.\nFor text translations where `tag_handling=html`, the default value is `nonewlines`, meaning the engine splits on punctuation only, ignoring newlines.\n\nThe use of `nonewlines` as the default value for text translations where `tag_handling=html` is new behavior that was implemented in November 2022, when HTML handling was moved out of beta.\n\nPossible values are:\n\n * `0` - no splitting at all, whole input is treated as one sentence\n * `1` (default when `tag_handling` is not set to `html`) - splits on punctuation and on newlines\n * `nonewlines` (default when `tag_handling=html`) - splits on punctuation only, ignoring newlines\n\nFor applications that send one sentence per text parameter, we recommend setting `split_sentences` to `0`, in order to prevent the engine from splitting the sentence unintentionally.\n\nPlease note that newlines will split sentences when `split_sentences=1`. We recommend cleaning files so they don't contain breaking sentences or setting the parameter `split_sentences` to `nonewlines`.",
+						Aliases:     []string{"split"},
+						Value:       "",	// NOTE: default value should depend on `tag_handling`.
+						Action: func(c *cli.Context, v string) error {
+							switch v {
+								case "0", "1", "nonewlines":
+									return nil
+								default:
+									return fmt.Errorf("split_sentences can only be 0, 1, or `nonewlines` (got: %s)", v)
+							}
+						},
+					},
+					&cli.StringFlag{
+						Name:        "preserve_formatting",
+						Usage:       "Sets whether the translation engine should respect the original formatting, even if it would usually correct some aspects. Possible values are:\n * `0` (default)\n * `1`\n\nThe formatting aspects affected by this setting include:\n * Punctuation at the beginning and end of the sentence\n * Upper/lower case at the beginning of the sentence",
+						Aliases:     []string{"preserve"},
+						Value:       "0",
+						Action: func(c *cli.Context, v string) error {
+							switch v {
+								case "0", "1":
+									return nil
+								default:
+									return fmt.Errorf("preserve_formatting can only be 0 or 1 (got: %s)", v)
+							}
+						},
+					},
+					&cli.IntFlag{
+						Name:        "outline_detection",
+						Usage:       "The automatic detection of the XML structure won't yield best results in all XML files. You can disable this automatic mechanism altogether by setting the `outline_detection` parameter to `false` and selecting the tags that should be considered structure tags. This will split sentences using the `splitting_tags` parameter.",
+						Aliases:     []string{"outline"},
+						Value:       0,
+					},
+					&cli.StringSliceFlag{
+						Name:        "non_splitting_tags",
+						Usage:       "Comma-separated list of XML tags which never split sentences.",
+						Aliases:     []string{"never"},
+						//Value:       [""],
+					},
+					&cli.StringSliceFlag{
+						Name:        "splitting_tags",
+						Usage:       "Comma-separated list of XML tags which always cause splits.",
+						Aliases:     []string{"always"},
+						//Value:       [""],
+					},
+					&cli.StringSliceFlag{
+						Name:        "ignore_tags",
+						Usage:       "Comma-separated list of XML tags which will always be ignored.",
+						Aliases:     []string{"ignore"},
+						//Value:       [""],
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -334,6 +402,8 @@ func main() {
 				},
 			},
 			{
+				// TODO: make a call to languages and store the valid pairs retrieved,
+				// so that we can later validate them. (gwyneth 20231105)
 				Name:        "languages",
 				// Aliases:     []string{"l"},
 				Usage:       "Retrieve supported languages",
@@ -347,9 +417,7 @@ func main() {
 						DefaultText: "source",
 						Action: func(c *cli.Context, v string) error {
 							switch v {
-								case "source":
-									fallthrough
-								case "target":
+								case "source", "target":
 									return nil
 								default:
 									return fmt.Errorf("type must be either `source` or `target` (got: %s)", v)
@@ -379,8 +447,8 @@ func main() {
 				Category:	 "Glossary",
 				Action: func(c *cli.Context) error {
 					client := deepl.DeepLClient{
-						Endpoint:		deepl.GetEndpoint(c.Bool("pro")) + "/glossary-language-pairs",
-						AuthKey:  		setting.AuthKey,
+						Endpoint:	deepl.GetEndpoint(c.Bool("pro")) + "/glossary-language-pairs",
+						AuthKey:	setting.AuthKey,
 					}
 					s, err := client.GlossaryLanguagePairs()
 					if err != nil {
@@ -392,7 +460,7 @@ func main() {
 			},
 		},
 	}
-	err = app.Run(os.Args)
+	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
