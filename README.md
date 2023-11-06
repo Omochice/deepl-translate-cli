@@ -17,23 +17,23 @@
 
 ### By `go install`
 
-```sh
+```console
 go install github.com/Omochice/deepl-translate-cli@latest
 ```
 
 ## Usage
 
-1. Get a DeepL access token from [here](https://www.deepl.com/docs-api). It looks like a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) with the characters `:fx` appended to it. 
+1. First, [get a DeepL access token](https://www.deepl.com/docs-api). It looks like a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) with the characters `:fx` appended to it.
 
-2. Set access token as `DEEPL_TOKEN` environment variable.
+2. Assign the access token to the `DEEPL_TOKEN` environment variable.
 
     e.g., in `bash`:
 
-    ```bash
-    export DEEPL_TOKEN=<YOUR TOKEN>
+    ```console
+    export DEEPL_TOKEN=<YOUR DEEPL API TOKEN>
     ```
 
-3. On the first run, if `<user home directory>/.config/deepl-translate-cli/setting.json` does not exist, it gets automatically created.
+3. On the first run, if `<USER HOME DIRECTORY>/.config/deepl-translate-cli/setting.json` does not exist, it gets automatically created.
 
     The format of the settings file is as shown below:
 
@@ -44,13 +44,18 @@ go install github.com/Omochice/deepl-translate-cli@latest
     }
     ```
 
-    For all existing languages that can be translated, as well as their identifying tags, see [this page](https://www.deepl.com/docs-api/translating-text/request/).
+    For all existing languages that can be translated, as well as their identifying tags, see [this page](https://www.deepl.com/docs-api/translating-text/request/). You can also query the server directly:
+	
+	```console
+	deepl-translate-cli languages
+	
+	```
 
 4. If the filename path is not specified, text is read from `STDIN`.
 
     Currently, only one path can be specified as argument.
 
--   If you want to use `source_lang`/`target_lang` without using the settings file, you can use the command-line parameters `--source_lang (-s)` and `target_lang (-t)`.
+-   If you want to select `source_lang`/`target_lang` _without_ using the settings file, you can use the command-line parameters `--source_lang (-s)` and `target_lang (-t)` instead.
 
     ```console
     cat <text.txt> | deepl-translate-cli --source_lang ES --target_lang DE
@@ -62,18 +67,28 @@ go install github.com/Omochice/deepl-translate-cli@latest
 
     ```console
     cat <text.txt> | deepl-translate-cli --pro
-	
+
+    ```
+
 ## Shell autocompletion (⚠️ experimental)
 
 Under the `autocomplete` folder are three scripts to enable auto-completion (for `bash`, `zsh`, and PowerShell). To use these, do the following (the example is for `bash`):
 
-```sh
+```console
 PROG=deepl-translate-cli source autocomplete/bash_autocomplete
 ```
 
 ## ⚠️ Warning! ⚠️
 
 If you run the tests, these may actually use your API Token, and consume some of your monthly credits!
+
+## Building
+
+If you wish to embed the build's author in the executable binary (to distinguish _your_ build from someone else's), you can build this with
+
+```console
+go build -ldflags "-X main.TheBuilder=<YOUR NAME HERE>"
+```
 
 ## Disclaimer
 
