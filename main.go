@@ -90,14 +90,22 @@ func initVersionInfo() error {
 	return nil
 }
 
-// Internal settings, to be filled by LoadSettings().
+// Internal settings, to be filled by LoadSettings(), and which gets saved to a file to
+// be reused on subsequent calls.
 // NOTE: This might become utterly different if we implement settings stored via
 // the github.com/urfave/cli-altsrc package. (gwyneth 20231103)
 type Setting struct {
-	AuthKey    string `json:"-"`
-	SourceLang string `json:"source_lang"`
-	TargetLang string `json:"target_lang"`
-	IsPro      bool   `json:"-"`
+	AuthKey    			string	`json:"-"`
+	SourceLang 			string	`json:"source_lang"`
+	TargetLang 			string	`json:"target_lang"`
+	IsPro      			bool	`json:"-"`
+	TagHandling			string	`json:"tag_handling"`			// "xml", "html".
+	SplitSentences		string	`json:"split_sentences"`		// "0", "1", "norewrite".
+	PreserveFormatting	string	`json:"preserve_formatting"`	// "0", "1".
+	OutlineDetection	int		`json:"outline_detection"`		// Integer; 0 is default.
+	NonSplittingTags	string	`json:"non_splitting_tags"`		// List of comma-separated XML tags.
+	SplittingTags		string	`json:"splitting_tags"`			// List of comma-separated XML tags.
+	IgnoreTags			string	`json:"ignore_tags"`			// List of comma-separated XML tags.
 }
 
 // Open the settings file, or, if it doesn't exist, create it first.
@@ -236,17 +244,20 @@ func main() {
 				Aliases: []string{"s"},
 				Usage:   "Set source language without using the settings file",
 				Value:	 "EN",
+				Destination:	&setting.SourceLang,
 			},
 			&cli.StringFlag{
 				Name:    "target_lang",
 				Aliases: []string{"t"},
 				Usage:   "Set target language without using the settings file",
 				Value:	 "JA",
+				Destination:	&setting.TargetLang,
 			},
 			&cli.BoolFlag{
 				Name:    "pro",
 				Usage:   "Use Pro plan's endpoint?",
 				Value:   false,
+				Destination: &setting.IsPro,
 			},
 		},
 		Commands: []*cli.Command{
@@ -262,6 +273,7 @@ func main() {
 						Usage:       "Set to XML or HTML in order to do more advanced parsing (empty means just using the plain text variant)",
 						Aliases:     []string{"tag"},
 						Value:       "",
+						Destination:	&setting.TagHandling,
 						Action: func(c *cli.Context, v string) error {
 							switch v {
 								case "xml", "html":
@@ -276,6 +288,7 @@ func main() {
 						Usage:       "Sets whether the translation engine should first split the input into sentences. For text translations where `tag_handling` is not set to `html`, the default value is `1`, meaning the engine splits on punctuation and on newlines.\nFor text translations where `tag_handling=html`, the default value is `nonewlines`, meaning the engine splits on punctuation only, ignoring newlines.\n\nThe use of `nonewlines` as the default value for text translations where `tag_handling=html` is new behavior that was implemented in November 2022, when HTML handling was moved out of beta.\n\nPossible values are:\n\n * `0` - no splitting at all, whole input is treated as one sentence\n * `1` (default when `tag_handling` is not set to `html`) - splits on punctuation and on newlines\n * `nonewlines` (default when `tag_handling=html`) - splits on punctuation only, ignoring newlines\n\nFor applications that send one sentence per text parameter, we recommend setting `split_sentences` to `0`, in order to prevent the engine from splitting the sentence unintentionally.\n\nPlease note that newlines will split sentences when `split_sentences=1`. We recommend cleaning files so they don't contain breaking sentences or setting the parameter `split_sentences` to `nonewlines`.",
 						Aliases:     []string{"split"},
 						Value:       "",	// NOTE: default value should depend on `tag_handling`.
+						Destination:	&setting.SplitSentences,
 						Action: func(c *cli.Context, v string) error {
 							switch v {
 								case "0", "1", "nonewlines":
@@ -290,6 +303,7 @@ func main() {
 						Usage:       "Sets whether the translation engine should respect the original formatting, even if it would usually correct some aspects. Possible values are:\n * `0` (default)\n * `1`\n\nThe formatting aspects affected by this setting include:\n * Punctuation at the beginning and end of the sentence\n * Upper/lower case at the beginning of the sentence",
 						Aliases:     []string{"preserve"},
 						Value:       "0",
+						Destination: &setting.PreserveFormatting,
 						Action: func(c *cli.Context, v string) error {
 							switch v {
 								case "0", "1":
@@ -304,24 +318,28 @@ func main() {
 						Usage:       "The automatic detection of the XML structure won't yield best results in all XML files. You can disable this automatic mechanism altogether by setting the `outline_detection` parameter to `false` and selecting the tags that should be considered structure tags. This will split sentences using the `splitting_tags` parameter.",
 						Aliases:     []string{"outline"},
 						Value:       0,
+						Destination: &setting.OutlineDetection,
 					},
-					&cli.StringSliceFlag{
+					&cli.StringFlag{
 						Name:        "non_splitting_tags",
 						Usage:       "Comma-separated list of XML tags which never split sentences.",
 						Aliases:     []string{"never"},
 						//Value:       [""],
+						Destination: &setting.NonSplittingTags,
 					},
-					&cli.StringSliceFlag{
+					&cli.StringFlag{
 						Name:        "splitting_tags",
 						Usage:       "Comma-separated list of XML tags which always cause splits.",
 						Aliases:     []string{"always"},
 						//Value:       [""],
+						Destination: &setting.SplittingTags,
 					},
-					&cli.StringSliceFlag{
+					&cli.StringFlag{
 						Name:        "ignore_tags",
 						Usage:       "Comma-separated list of XML tags which will always be ignored.",
 						Aliases:     []string{"ignore"},
 						//Value:       [""],
+						Destination: &setting.IgnoreTags,
 					},
 				},
 				Action: func(c *cli.Context) error {
