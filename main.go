@@ -38,6 +38,7 @@ type versionInfoType struct {
 var (
 	versionInfo versionInfoType	// cached values for this build.
 	TheBuilder string			// to be overwritten via the linker command `go build -ldflags "-X main.TheBuilder=gwyneth"`.
+	debugLevel int				// verbosity/debug level
 )
 
 // Initialises the versionInfo variable.
@@ -95,9 +96,10 @@ func initVersionInfo() error {
 // NOTE: This might become utterly different if we implement settings stored via
 // the github.com/urfave/cli-altsrc package. (gwyneth 20231103)
 type Setting struct {
-	AuthKey    			string	`json:"-"`
+	AuthKey    			string	`json:"-"`						// API token, looks like a UUID with ":fx".
 	SourceLang 			string	`json:"source_lang"`
 	TargetLang 			string	`json:"target_lang"`
+	LanguagesType		string	`json:"type"`					// For the "languages" utility call, either "source" or "target".
 	IsPro      			bool	`json:"-"`
 	TagHandling			string	`json:"tag_handling"`			// "xml", "html".
 	SplitSentences		string	`json:"split_sentences"`		// "0", "1", "norewrite".
@@ -106,6 +108,7 @@ type Setting struct {
 	NonSplittingTags	string	`json:"non_splitting_tags"`		// List of comma-separated XML tags.
 	SplittingTags		string	`json:"splitting_tags"`			// List of comma-separated XML tags.
 	IgnoreTags			string	`json:"ignore_tags"`			// List of comma-separated XML tags.
+	Debug				int		`json:"debug"`					// Debug/verbosity level, 0 is no debugging
 }
 
 // Open the settings file, or, if it doesn't exist, create it first.
@@ -257,6 +260,12 @@ func main() {
 				Value:   false,
 				Destination: &setting.IsPro,
 			},
+			&cli.BoolFlag{
+				Name:	"debug",
+				Aliases: []string{"d"},
+				Usage:	"Debugging; repeating the flag increases verbosity.",
+				Count:	&debugLevel,
+			},
 		},
 		Commands: []*cli.Command{
 			{
@@ -341,7 +350,7 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					if c.String("source_lang") != "" {
+/*					if c.String("source_lang") != "" {
 						setting.SourceLang = c.String("source_lang")
 					}
 					if c.String("target_lang") != "" {
@@ -349,6 +358,11 @@ func main() {
 					}
 					if c.Bool("pro") {
 						setting.IsPro = true
+					}
+*/
+					// TODO(gwyneth): Create constants for debugging levels.
+					if debugLevel > 1 {
+						fmt.Fprintf(os.Stderr, "Number of args (Narg): %d, c.Args.Len(): %d\n", c.NArg(), c.Args().Len())
 					}
 					var rawSentence string
 					if c.NArg() == 0 {
@@ -381,21 +395,32 @@ func main() {
 					}
 
 					client := deepl.DeepLClient{
-						Endpoint: deepl.GetEndpoint(c.Bool("pro")) + "/translate",
-						AuthKey:  setting.AuthKey,
+						Endpoint: 			deepl.GetEndpoint(c.Bool("pro")) + "/translate",
+						AuthKey:			deeplToken,
+						SourceLang:			c.String("source_lang"),
+						TargetLang:			c.String("target_lang"),
+						LanguagesType:		c.String("type"),
+						IsPro:				c.Bool("pro"),
+						TagHandling:		c.String("tag_handling"),
+						SplitSentences:		c.String("split_sentences"),
+						PreserveFormatting:	c.String("preserve_formatting"),
+						OutlineDetection:	c.Int("outline_detection"),
+						NonSplittingTags:	c.String("non_splitting_tags"),
+						SplittingTags:		c.String("splitting_tags"),
+						IgnoreTags:			c.String("ignore_tags"),
+						Debug:				debugLevel,
 					}
 
-					if c.String("tag_handling") == "" {
-						translateds, err := client.Translate(rawSentence, setting.SourceLang, setting.TargetLang)
-						if err != nil {
-							return err
-						}
-						for _, translated := range translateds {
-							fmt.Print(translated)
-						}
-						return nil
+					// Simplified call to Translate, now everything is passed via the DeepLClient
+					// initialisation.
+					translateds, err := client.Translate(rawSentence)
+					if err != nil {
+						return err
 					}
-					return fmt.Errorf("tag_handling not implemented yet")
+					for _, translated := range translateds {
+						fmt.Print(translated)
+					}
+					return nil
 				},
 			},
 			{

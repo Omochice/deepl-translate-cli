@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -14,6 +15,15 @@ import (
 // or throws an error.
 // NOTE: Closes the HTTP response that was opened.
 func (c *DeepLClient) apiCall(method string, params url.Values, jsonObject any) error {
+	// If we're debugging, show what was printed out:
+	if c.Debug > 1 {
+		fmt.Fprintf(os.Stderr, "Values being called using %q to API endpoint (%s): %q\n",
+			method,
+			c.Endpoint,
+			params.Encode(),
+		)
+	}
+
 	// http.PostForm() unfortunately doesn't allow us to set headers, and we need to send the authorization
 	// in the headers, not in the body... (gwyneth 20231104)
 	client := &http.Client{}
