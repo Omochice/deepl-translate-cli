@@ -182,6 +182,32 @@ func main() {
 	// Global settings for this cli app.
 	var setting Setting
 
+	// Set up the version/runtime/debug-related variables, and cache them:
+	initVersionInfo()
+
+	// Test if the authentication can work or not, depending if we got the token
+	// set as an environment variable.
+	deeplToken, ok := os.LookupEnv("DEEPL_TOKEN")
+	if !ok {
+		fmt.Fprintln(os.Stderr, "Please set first your DeepL authentication key using the environment variable DEEPL_TOKEN.")
+		os.Exit(1)	// NOTE: the cli.Exit() function cannot be used here, because cli is not initialized yet.
+		// return cli.Exit(fmt.Sprintln("Please set first your DeepL authentication key using the environment variable DEEPL_TOKEN."), 1)
+	}
+	var err error
+	// Configure all settings from the very start, because we need the authkey & endpoint
+	// for all other calls, not just translations.
+	setting, err = LoadSettings(
+		Setting{
+			AuthKey: deeplToken,
+		},
+		true)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cannot init settings, error was: %q", err)
+		os.Exit(1)
+		// return cli.Exit(fmt.Sprintf("cannot init settings, error was: %q", err), 1)
+	}
+
+	// start app
 	app := &cli.App{
 		Name:      "deepl-translate-cli",
 		Usage:     "Translate sentences, using the DeepL API.",
@@ -210,34 +236,6 @@ func main() {
 			},
 		},
 		Copyright: "© 2021-2023 by Omochice. All rights reserved. Freely distributed under a MIT license.\nThis software is not affiliated nor endorsed by DeepL SE.",
-		Before: func(c *cli.Context) error {
-			// Set up the version/runtime/debug-related variables, and cache them:
-			initVersionInfo()
-
-			// Test if the authentication can work or not, depending if we got the token
-			// set as an environment variable.
-			deeplToken, ok := os.LookupEnv("DEEPL_TOKEN")
-			if !ok {
-				// fmt.Fprintln(os.Stderr, "Please set first your DeepL authentication key using the environment variable DEEPL_TOKEN.")
-				// os.Exit(1)	// NOTE: the cli.Exit() function cannot be used here, because cli is not initialized yet.
-				return cli.Exit(fmt.Sprintln("Please set first your DeepL authentication key using the environment variable DEEPL_TOKEN."), 1)
-			}
-			var err error
-			// Configure all settings from the very start, because we need the authkey & endpoint
-			// for all other calls, not just translations.
-			setting, err = LoadSettings(
-				Setting{
-					AuthKey: deeplToken,
-				},
-				true)
-			if err != nil {
-				// fmt.Fprintf(os.Stderr, "cannot init settings, error was: %q", err)
-				// os.Exit(1)
-				return cli.Exit(fmt.Sprintf("cannot init settings, error was: %q", err), 1)
-			}
-
-			return nil
-		},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "source_lang",
@@ -478,7 +476,7 @@ func main() {
 			},
 		},
 	}
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
