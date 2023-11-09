@@ -272,7 +272,7 @@ func main() {
 				Name:        "translate",
 				Aliases:     []string{"trans"},
 				Usage:       "Basic translation of a set of Unicode strings into another language",
-				Description: "Text to be translated.\nOnly UTF-8-encoded plain text is supported. May contain multiple sentences, but the total request body size must not exceed 128 KiB (128 · 1024 bytes).\n Please split up your text into multiple	calls if it exceeds this limit.",
+				Description: "Text to be translated.\nOnly UTF-8-encoded plain text is supported. May contain multiple sentences, but the total request body size must not exceed 128 KiB (128 · 1024 bytes).\nPlease split up your text into multiple	calls if it exceeds this limit.",
 				Category:	 "Translations",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
