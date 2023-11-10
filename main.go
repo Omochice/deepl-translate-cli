@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Omochice/deepl-translate-cli/deepl"
+	"github.com/lmorg/readline"
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v2"
 )
@@ -350,7 +351,8 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
-/*					if c.String("source_lang") != "" {
+/*
+					if c.String("source_lang") != "" {
 						setting.SourceLang = c.String("source_lang")
 					}
 					if c.String("target_lang") != "" {
@@ -370,7 +372,13 @@ func main() {
 						if isatty.IsTerminal(os.Stdin.Fd()) {
 							// is not pipe (i.e. TTY)
 							// NOTE: This seems not to work very well...(gwyneth 20231101)
-							fmt.Scan(&rawSentence)
+							// fmt.Scan(&rawSentence)
+							// Replaced it by using a readline (from a library), but it might really be overkill, since
+							rl := readline.NewInstance()
+							rawSentence, err = rl.Readline()
+							if err != nil {
+								return err
+							}
 						} else {
 							// is pipe
 							pipeIn, err := io.ReadAll(os.Stdin)
