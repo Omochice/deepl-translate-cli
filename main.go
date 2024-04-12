@@ -250,7 +250,7 @@ func main() {
 				Email: "gwyneth.llewelyn@gwynethllewelyn.net",
 			},
 		},
-		Copyright: "© 2021-2023 by Omochice. All rights reserved. Freely distributed under a MIT license.\nThis software is not affiliated nor endorsed by DeepL SE.",
+		Copyright: "© 2021-2024 by Omochice. All rights reserved. Freely distributed under a MIT license.\nThis software is not affiliated nor endorsed by DeepL SE.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "source_lang",
