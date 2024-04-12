@@ -32,7 +32,7 @@ func TestLoadsettings(t *testing.T) {
 
 	//
 	errorText = "There should occur an error on this function if AuthKey is not set."
-	expectedErrorText := "no DeepL token is set" // DRY...
+	expectedErrorText := "no DeepL token is set; use the environment variable `DEEPL_TOKEN` to set it" // DRY...
 	setting = Setting{
 		AuthKey:    "",
 		SourceLang: "EN",
