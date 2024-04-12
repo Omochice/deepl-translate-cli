@@ -24,7 +24,7 @@ type DeepLClient struct {
 	NonSplittingTags	string	`json:"non_splitting_tags"`		// List of comma-separated XML tags.
 	SplittingTags		string	`json:"splitting_tags"`			// List of comma-separated XML tags.
 	IgnoreTags			string	`json:"ignore_tags"`			// List of comma-separated XML tags.
-	Debug				int		`json:"debug"`					// Debug/verbosity level, 0 is no debugging
+	Debug				int		`json:"debug"`					// Debug/verbosity level, 0 is no debugging.
 }
 
 type DeepLResponse struct {
