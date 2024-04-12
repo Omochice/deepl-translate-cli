@@ -50,7 +50,7 @@ func (c *DeepLClient) apiCall(method string, params url.Values, jsonObject any) 
 }
 
 // Validates the response based on its status code, decoding the returned JSON.
-// If the status code is "normal". does nothing (resp remains untouched and open)
+// If the status code is "normal", does nothing (`resp` remains untouched and open).
 func validateResponse(resp *http.Response) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		// Parsed JSON error data.
@@ -72,7 +72,7 @@ func validateResponse(resp *http.Response) error {
 }
 
 // Generic API response parser, returns whatever the JSON object was.
-// The jsonObject to be passed can be anything; returns error from parsing,
+// The `jsonObject` to be passed can be anything; returns error from parsing,
 // or nil if all's ok.
 func parseResponse(resp io.ReadCloser, jsonObject any) error {
 	body, err := io.ReadAll(resp)
