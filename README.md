@@ -53,7 +53,7 @@ go install github.com/Omochice/deepl-translate-cli@latest
 
 4. If the filename path is not specified, text is read from `STDIN`.
 
-    Currently, only one path can be specified as argument.
+    Currently, only one file path can be specified as an argument.
 
 -   If you want to select `source_lang`/`target_lang` _without_ using the settings file, you can use the command-line parameters `--source_lang (-s)` and `target_lang (-t)` instead.
 
