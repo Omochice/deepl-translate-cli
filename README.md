@@ -1,7 +1,7 @@
 [![go-test](https://github.com/Omochice/deepl-translate-cli/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Omochice/deepl-translate-cli/actions/workflows/ci.yml)
 [![goreleaser](https://github.com/Omochice/deepl-translate-cli/actions/workflows/autorelease.yml/badge.svg)](https://github.com/Omochice/deepl-translate-cli/actions/workflows/autorelease.yml)
 
-# ✍️ [DeepL]((https://www.deepl.com) Translate CLI (Unofficial)
+# ✍️ [DeepL](https://www.deepl.com) Translate CLI (Unofficial)
 
 ![sampleMovie](https://i.gyazo.com/09a4801d44e85980f83666dceda0166e.gif)
 
@@ -13,7 +13,7 @@
 
 2. Unzip downloaded file.
 
-3. Move executable file into a directory in `PATH`. (like `$HOME/.local/bin/`)
+3. Move the executable file into a directory in your `PATH` (e.g., `$HOME/.local/bin/`).
 
 ### By `go install`
 
@@ -33,7 +33,7 @@ go install github.com/Omochice/deepl-translate-cli@latest
     export DEEPL_TOKEN=<YOUR DEEPL API TOKEN>
     ```
 
-3. On the first run, if `<USER HOME DIRECTORY>/.config/deepl-translate-cli/setting.json` does not exist, it gets automatically created.
+3. On the first run, if `$HOME/.config/deepl-translate-cli/setting.json` does not exist, it gets automatically created.
 
     The format of the settings file is as shown below:
 
@@ -122,4 +122,4 @@ go build -ldflags "-X main.TheBuilder=<YOUR NAME HERE>"
 
 ## Disclaimer
 
-None of the developers are affiliated with [DeepL](https://www.deepl.com/) and this code should not be considered to represent an endorsement by DeepL or any of its affiliates, partners or subsidiaries. It is released in the hope that it might be helpful to the Go programming community (which lacks official support by DeepL at the time of writing), without any warranty whatsoever (see [LICENSE] for more information).
+None of the developers are affiliated with [DeepL](https://www.deepl.com/) and this code should not be considered to represent an endorsement by DeepL or any of its affiliates, partners or subsidiaries. It is released in the hope that it might be helpful to the Go programming community (which lacks official support by DeepL at the time of writing), without any warranty whatsoever (see [LICENSE](./LICENSE) for more information).
