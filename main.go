@@ -20,7 +20,7 @@ import (
 )
 
 // versionInfoType holds the relevant information for this build.
-// it is meant to be used as a cache.
+// It is meant to be used as a cache.
 type versionInfoType struct {
 	version		string		// Runtime version.
 	commit  	string		// Commit revision number.
@@ -28,8 +28,8 @@ type versionInfoType struct {
 	date		time.Time	// Same as before, converted to a time.Time, because that's what the cli package uses.
 	builtBy 	string		// User who built this (see note).
 	goOS		string		// Operating system for this build (from runtime).
-	goARCH		string		// Architecture, i.e., CPU type (from runtime)
-	goVersion	string		// Go version used to compile this build (from runtime)
+	goARCH		string		// Architecture, i.e., CPU type (from runtime).
+	goVersion	string		// Go version used to compile this build (from runtime).
 	init		bool		// Have we already initialised the cache object?
 }
 
@@ -39,7 +39,7 @@ type versionInfoType struct {
 var (
 	versionInfo versionInfoType	// cached values for this build.
 	TheBuilder string			// to be overwritten via the linker command `go build -ldflags "-X main.TheBuilder=gwyneth"`.
-	debugLevel int				// verbosity/debug level
+	debugLevel int				// verbosity/debug level.
 )
 
 // Initialises the versionInfo variable.
@@ -81,9 +81,17 @@ func initVersionInfo() error {
 		versionInfo.commit += " [" + rev + "]"
 	}
 	// attempt to parse the date, which comes as a string in RFC3339 format, into a date.Time:
-	versionInfo.date, _ = time.Parse(versionInfo.dateString, time.RFC3339)
-	// we can safely ignore the parsing error: either the conversion works, or it doesn't, and we
-	// cannot do anything about it... (gwyneth 20231103)
+	var parseErr error
+	if versionInfo.date, parseErr = time.Parse(versionInfo.dateString, time.RFC3339); parseErr != nil {
+		// Note: we can safely ignore the parsing error: either the conversion works, or it doesn't, and we
+		// cannot do anything about it... (gwyneth 20231103)
+		// However, the AI revision bots dislike this, so we'll assign the current date instead.
+		versionInfo.date = time.Now()
+
+		if debugLevel > 1 {
+			fmt.Fprintf(os.Stderr, "date parse error: %v", parseErr)
+		}
+	}
 
 	// NOTE: I have no idea where the "builtBy" info is supposed to come from;
 	// the way I do it is to force the variable with a compile-time option. (gwyneth 20231103)
@@ -109,7 +117,7 @@ type Setting struct {
 	NonSplittingTags	string	`json:"non_splitting_tags"`		// List of comma-separated XML tags.
 	SplittingTags		string	`json:"splitting_tags"`			// List of comma-separated XML tags.
 	IgnoreTags			string	`json:"ignore_tags"`			// List of comma-separated XML tags.
-	Debug				int		`json:"debug"`					// Debug/verbosity level, 0 is no debugging
+	Debug				int		`json:"debug"`					// Debug/verbosity level, 0 is no debugging.
 }
 
 // Open the settings file, or, if it doesn't exist, create it first.
@@ -185,6 +193,8 @@ func InitializeConfigFile(ConfigPath string) error {
 func main() {
 	// Global settings for this cli app.
 	var setting Setting
+	// DeepL Token, usually coming from the environmant variable `DEEPL_TOKEN`.
+	var deeplToken string
 
 	// Set up the version/runtime/debug-related variables, and cache them:
 	initVersionInfo()
@@ -197,6 +207,7 @@ func main() {
 		os.Exit(1)	// NOTE: the cli.Exit() function cannot be used here, because cli is not initialized yet.
 		// return cli.Exit(fmt.Sprintln("Please set first your DeepL authentication key using the environment variable DEEPL_TOKEN."), 1)
 	}
+	// Generic error variable to work around scoping issues.
 	var err error
 	// Configure all settings from the very start, because we need the authkey & endpoint
 	// for all other calls, not just translations.
