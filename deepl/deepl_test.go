@@ -149,3 +149,44 @@ func TestParseTranslationResponse(t *testing.T) {
 		}
 	}
 }
+
+// added by @coderabbitai
+func TestValidateResponseEdgeCases(t *testing.T) {
+	// Test case: Empty response body
+	emptyResp := http.Response{
+		Status:     "204 No Content",
+		StatusCode: 204,
+		Body:       io.NopCloser(bytes.NewBuffer([]byte(""))),
+	}
+	err := validateResponse(&emptyResp)
+	if err != nil {
+		t.Errorf("Expected no error for empty response body, got: %v", err)
+	}
+
+	// Test case: Non-JSON content in response body
+	nonJSONResp := http.Response{
+		Status:     "200 OK",
+		StatusCode: 200,
+		Body:       io.NopCloser(bytes.NewBuffer([]byte("Not a JSON response"))),
+	}
+	err = validateResponse(&nonJSONResp)
+	if err == nil || !strings.Contains(err.Error(), "invalid JSON") {
+		t.Errorf("Expected error for non-JSON response body")
+	}
+
+	// Test case: JSON response with unexpected fields
+	unexpectedJSONResp := http.Response{
+		Status:     "200 OK",
+		StatusCode: 200,
+		Body:       io.NopCloser(bytes.NewBuffer([]byte(`{"unexpected": "field"}`))),
+	}
+	err = validateResponse(&unexpectedJSONResp)
+	if err != nil {
+		t.Errorf("Expected no error for JSON with unexpected fields, got: %v", err)
+	}
+
+	// Test case: Network error simulation (this would typically be handled outside this function, but included for completeness).
+	// This case would need to mock network failure, which is outside the scope of validateResponse function as it does not handle network operations directly.
+}
+
+// Suggested by @coderabbitai
