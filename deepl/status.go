@@ -66,6 +66,13 @@ func (c *DeepLClient) Languages() (string, error) {
 		return "", err
 	}
 
+	// TODO(gwyneth): @coderabbitai suggests that this should be returned in different formats,
+	// namely, structured ones. One possibility would be to have different methods, _or_ pass
+	// a parameter (e.g., formatJSON, formatXML, formatYAML, formatUnstructured) and spew out
+	// whatever format is appropriate.
+	// Currently, the only use case for this function is inside a CLI, where the human reader
+	// will very likely prefer to read unstructured (but pretty-printed) language pairs...
+	// (gwyneth 20230413)
 	var r string
 	for _, lang := range langs {
 		r += lang.Language + ": " + lang.Name
