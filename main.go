@@ -182,7 +182,9 @@ func InitializeConfigFile(ConfigPath string) error {
 		return err
 	}
 
-	out.Write(([]byte)(decoded))
+	if _, err := out.Write(([]byte)(decoded)); err != nil {
+		return fmt.Errorf("failed to write to config file: %s", err)
+	}
 	return nil
 }
 
