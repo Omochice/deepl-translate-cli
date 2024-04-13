@@ -377,6 +377,7 @@ func main() {
 					if debugLevel > 1 {
 						fmt.Fprintf(os.Stderr, "Number of args (Narg): %d, c.Args.Len(): %d\n", c.NArg(), c.Args().Len())
 					}
+					// The captured sentence for translation, unprocessed; it can come from different sources!
 					var rawSentence string
 					if c.NArg() == 0 {
 						// no filename path passed; read from STDIN (TTY or pipe)
