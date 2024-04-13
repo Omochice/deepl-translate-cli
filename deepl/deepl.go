@@ -1,6 +1,7 @@
 package deepl
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -38,6 +39,12 @@ type Translated struct {
 
 // API call to translate text from sourceLang to targetLang.
 func (c *DeepLClient) Translate(text string) ([]string, error) {
+	// @coderabbitai suggested to test for `text` being empty.
+	// This should _not_ happen but it's nevertheless a good idea! (gwyneth 20240412)
+	if len(text) == 0 {
+		return nil, fmt.Errorf("received empty string for translation")
+	}
+
 	// TODO(gwyneth): Make the call with JSON, it probably makes much more sense that way.
 	params := url.Values{}
 	params.Add("auth_key",				c.AuthKey)
@@ -51,13 +58,13 @@ func (c *DeepLClient) Translate(text string) ([]string, error) {
 	params.Add("non_splitting_tags",	c.NonSplittingTags)
 	params.Add("splitting_tags",		c.SplittingTags)
 	params.Add("ignore_tags",			c.IgnoreTags)
-	params.Add("text", text)
+	params.Add("text",					text)
 
 	var parsed DeepLResponse
 
 	err := c.apiCall(http.MethodPost, params, &parsed)
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 	r := []string{}
 	for _, translated := range parsed.Translations {
