@@ -175,7 +175,7 @@ func TestValidateResponseEdgeCases(t *testing.T) {
 	err = validateResponse(&nonJSONResp)
 	if err == nil {
 		t.Errorf("Expected error for non-JSON response body; got no error instead")
-	} else if !strings.Contains(err.Error(), "invalid JSON") {
+	} else if !strings.Contains(err.Error(), "JSON decoding error") {
 		t.Errorf("Unexpected error for non-JSON response body: %v", err)
 	}
 	// Test case: JSON response with unexpected fields

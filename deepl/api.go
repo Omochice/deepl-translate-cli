@@ -64,7 +64,8 @@ func validateResponse(resp *http.Response) error {
 		// going directly for the semi-raw map[string]interface{} reply instead. (gwyneth 20231103)
 		e := json.NewDecoder(resp.Body).Decode(&data)
 		if e != nil {
-			return fmt.Errorf("%s", baseErrorText)
+			// Added the response body as suggested by @coderabbitai
+			return fmt.Errorf("%s, JSON decoding error was: %s [data received: %v]", baseErrorText, e, resp.Body)
 		} else {
 			return fmt.Errorf("%s, %s", baseErrorText, data["message"])
 		}
