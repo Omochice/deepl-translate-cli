@@ -52,7 +52,8 @@ func (c *DeepLClient) apiCall(method string, params url.Values, jsonObject any) 
 // Validates the response based on its status code, decoding the returned JSON.
 // If the status code is "normal", does nothing (`resp` remains untouched and open).
 func validateResponse(resp *http.Response) error {
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	// http.StatusOK - 200; http.StatusMultipleChoices - 300
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		// Parsed JSON error data.
 		var data map[string]interface{}
 		baseErrorText := fmt.Sprintf("Invalid response [%d %s]",

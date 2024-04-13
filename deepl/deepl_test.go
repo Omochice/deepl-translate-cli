@@ -21,14 +21,14 @@ func TestValidateResponse(t *testing.T) {
 		t.Fatalf("Error within json.Marshal")
 	}
 	testResponse := http.Response{
-		Status:     "200 test",
-		StatusCode: 200,
+		Status:     fmt.Sprintf("%d %s", http.StatusOK, http.StatusText(http.StatusOK)), // 200 OK
+		StatusCode: http.StatusOK,
 		Body:       io.NopCloser(bytes.NewBuffer(testBody)),
 	}
 
 	for c := 100; c < 512; c++ {
 		if http.StatusText(c) == "" {
-			// unused stasus code
+			// unused status code
 			continue
 		}
 		testResponse.Status = fmt.Sprintf("%d test", c)
@@ -89,8 +89,8 @@ func TestValidateResponse(t *testing.T) {
 
 func TestParseTranslationResponse(t *testing.T) {
 	baseResponse := http.Response{
-		Status:     "200 test",
-		StatusCode: 200,
+		Status:     fmt.Sprintf("%d %s", http.StatusOK, http.StatusText(http.StatusOK)), //  200 OK
+		StatusCode: http.StatusOK,	// 200
 	}
 	{
 		input := map[string][]map[string]string{
@@ -154,8 +154,8 @@ func TestParseTranslationResponse(t *testing.T) {
 func TestValidateResponseEdgeCases(t *testing.T) {
 	// Test case: Empty response body
 	emptyResp := http.Response{
-		Status:     "204 No Content",
-		StatusCode: 204,
+		Status:     fmt.Sprintf("%d %s", http.StatusNoContent, http.StatusText(http.StatusNoContent)), // 204 No Content
+		StatusCode: http.StatusNoContent,
 		Body:       io.NopCloser(bytes.NewBuffer([]byte(""))),
 	}
 	err := validateResponse(&emptyResp)
@@ -164,20 +164,24 @@ func TestValidateResponseEdgeCases(t *testing.T) {
 	}
 
 	// Test case: Non-JSON content in response body
+	// Note: this test has to be done with status code below 200 or over 300! (gwyneth 20240413)
 	nonJSONResp := http.Response{
-		Status:     "200 OK",
-		StatusCode: 200,
+		// Status:     "200 OK",
+		// StatusCode: 200,
+		Status:     fmt.Sprintf("%d %s", http.StatusNotFound, http.StatusText(http.StatusNotFound)),	// 404 Not Found
+		StatusCode: http.StatusNotFound,
 		Body:       io.NopCloser(bytes.NewBuffer([]byte("Not a JSON response"))),
 	}
 	err = validateResponse(&nonJSONResp)
-	if err == nil || !strings.Contains(err.Error(), "invalid JSON") {
-		t.Errorf("Expected error for non-JSON response body")
+	if err == nil {
+		t.Errorf("Expected error for non-JSON response body; got no error instead")
+	} else if !strings.Contains(err.Error(), "invalid JSON") {
+		t.Errorf("Unexpected error for non-JSON response body: %v", err)
 	}
-
 	// Test case: JSON response with unexpected fields
 	unexpectedJSONResp := http.Response{
-		Status:     "200 OK",
-		StatusCode: 200,
+		Status:     fmt.Sprintf("%d %s", http.StatusOK, http.StatusText(http.StatusOK)), // 200 OK
+		StatusCode: http.StatusOK,	// 200
 		Body:       io.NopCloser(bytes.NewBuffer([]byte(`{"unexpected": "field"}`))),
 	}
 	err = validateResponse(&unexpectedJSONResp)
@@ -186,7 +190,22 @@ func TestValidateResponseEdgeCases(t *testing.T) {
 	}
 
 	// Test case: Network error simulation (this would typically be handled outside this function, but included for completeness).
-	// This case would need to mock network failure, which is outside the scope of validateResponse function as it does not handle network operations directly.
+	// This case would need to mock network failure, which is outside the scope of validateResponse function as it does not handle netwrk operations directly.
 }
 
-// Suggested by @coderabbitai
+// A preliminary test for the Translate() function. I'm no good at this, so... baby steps.
+// (gwyneth 20240412)
+func TestTranslate(t *testing.T) {
+	var deeplTestClient DeepLClient
+
+	// Translating an empty string should give an error.
+	translateds, err := deeplTestClient.Translate("")
+	if err == nil {
+		t.Errorf("Expected an error from attempt to translate empty string")
+	} else {
+		t.Logf("✅🆗 Attempt to translate an empty string returned expected error %v", err)
+	}
+	if translateds != nil {
+		t.Errorf("The translation ought to have been empty, but got the following instead: %v", translateds)
+	}
+}
