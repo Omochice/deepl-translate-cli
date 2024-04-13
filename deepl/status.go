@@ -83,7 +83,7 @@ type DeepLGlossaryPairsResponse struct {
 	SupportedLanguages []GlossaryPair	`json:"supported_languages"`
 }
 
-// One pair of supported glossarary languages.
+// One pair of supported glossary languages.
 type GlossaryPair struct {
 	SourceLang string `json:"source_lang"`
 	TargetLang string `json:"target_lang"`
