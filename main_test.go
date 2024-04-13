@@ -97,7 +97,7 @@ func TestInitializeConfigFile(t *testing.T) {
 
 	// will success
 	if err := InitializeConfigFile(p); err != nil {
-		t.Fatalf("There should be no errors thrown by this function\nActual: %s", err
+		t.Fatalf("There should be no errors thrown by this function\nActual: %s", err)
 	}
 	if !Exists(p) {
 		t.Fatalf("The function should have created the config file: %q", p)
