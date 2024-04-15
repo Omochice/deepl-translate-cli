@@ -1,20 +1,31 @@
 package deepl
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 type DeepL interface {
-	Translate(Text string, sourceLang string, targetLang string)
+	Translate(Text string)
 }
 
 type DeepLClient struct {
-	Endpoint string
-	AuthKey  string
+	Endpoint			string	`json:"endpoint"`				// API endpoint, which differs between the Free and the Pro plans.
+	AuthKey				string	`json:"authkey"`				// API token, looks like a UUID with ":fx". appended to it.
+	SourceLang 			string	`json:"source_lang"`
+	TargetLang 			string	`json:"target_lang"`
+	LanguagesType		string	`json:"type"`					// For the "languages" utility call, either "source" or "target".
+	IsPro      			bool	`json:"-"`
+	TagHandling			string	`json:"tag_handling"`			// "xml", "html".
+	SplitSentences		string	`json:"split_sentences"`		// "0", "1", "norewrite".
+	PreserveFormatting	string	`json:"preserve_formatting"`	// "0", "1".
+	OutlineDetection	int		`json:"outline_detection"`		// Integer; 0 is default.
+	NonSplittingTags	string	`json:"non_splitting_tags"`		// List of comma-separated XML tags.
+	SplittingTags		string	`json:"splitting_tags"`			// List of comma-separated XML tags.
+	IgnoreTags			string	`json:"ignore_tags"`			// List of comma-separated XML tags.
+	Debug				int		`json:"debug"`					// Debug/verbosity level, 0 is no debugging.
 }
 
 type DeepLResponse struct {
@@ -22,24 +33,38 @@ type DeepLResponse struct {
 }
 
 type Translated struct {
-	DetectedSourceLaguage string `json:"detected_source_language"`
-	Text                  string `json:"text"`
+	DetectedSourceLanguage	string `json:"detected_source_language"`
+	Text                 	string `json:"text"`
 }
 
-func (c *DeepLClient) Translate(text string, sourceLang string, targetLang string) ([]string, error) {
-	params := url.Values{}
-	params.Add("auth_key", c.AuthKey)
-	params.Add("source_lang", sourceLang)
-	params.Add("target_lang", targetLang)
-	params.Add("text", text)
-	resp, err := http.PostForm(c.Endpoint, params)
-
-	if err := ValidateResponse(resp); err != nil {
-		return []string{}, err
+// API call to translate text from sourceLang to targetLang.
+func (c *DeepLClient) Translate(text string) ([]string, error) {
+	// @coderabbitai suggested to test for `text` being empty.
+	// This should _not_ happen but it's nevertheless a good idea! (gwyneth 20240412)
+	if len(text) == 0 {
+		return nil, fmt.Errorf("received empty string for translation")
 	}
-	parsed, err := ParseResponse(resp)
+
+	// TODO(gwyneth): Make the call with JSON, it probably makes much more sense that way.
+	params := url.Values{}
+	params.Add("auth_key",				c.AuthKey)
+	params.Add("source_lang",			c.SourceLang)
+	params.Add("target_lang",			c.TargetLang)
+	params.Add("type",					c.LanguagesType)
+	params.Add("tag_handling",			c.TagHandling)
+	params.Add("split_sentences",		c.SplitSentences)
+	params.Add("preserve_formatting",	c.PreserveFormatting)
+	params.Add("outline_detection",		strconv.Itoa(c.OutlineDetection))
+	params.Add("non_splitting_tags",	c.NonSplittingTags)
+	params.Add("splitting_tags",		c.SplittingTags)
+	params.Add("ignore_tags",			c.IgnoreTags)
+	params.Add("text",					text)
+
+	var parsed DeepLResponse
+
+	err := c.apiCall(http.MethodPost, params, &parsed)
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 	r := []string{}
 	for _, translated := range parsed.Translations {
@@ -47,57 +72,10 @@ func (c *DeepLClient) Translate(text string, sourceLang string, targetLang strin
 	}
 	return r, nil
 }
-
-var KnownErrors = map[int]string{
-	400: "Bad request. Please check error message and your parameters.",
-	403: "Authorization failed. Please supply a valid auth_key parameter.",
-	404: "The requested resource could not be found.",
-	413: "The request size exceeds the limit.",
-	414: "The request URL is too long. You can avoid this error by using a POST request instead of a GET request, and sending the parameters in the HTTP body.",
-	429: "Too many requests. Please wait and resend your request.",
-	456: "Quota exceeded. The character limit has been reached.",
-	503: "Resource currently unavailable. Try again later.",
-	529: "Too many requests. Please wait and resend your request.",
-} // this from https://www.deepl.com/docs-api/accessing-the-api/error-handling/
-
-func ValidateResponse(resp *http.Response) error {
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		var data map[string]interface{}
-		baseErrorText := fmt.Sprintf("Invalid response [%d %s]",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode))
-		if t, ok := KnownErrors[resp.StatusCode]; ok {
-			baseErrorText += fmt.Sprintf(" %s", t)
-		}
-		e := json.NewDecoder(resp.Body).Decode(&data)
-		if e != nil {
-			return fmt.Errorf("%s", baseErrorText)
-		} else {
-			return fmt.Errorf("%s, %s", baseErrorText, data["message"])
-		}
+// Returns the base DeepL API endpoint for either the Free or the Pro Plan (if IsPro is true).
+func GetEndpoint(isPro bool) string {
+	if isPro {
+		return "https://api.deepl.com/v2"
 	}
-	return nil
-}
-
-func ParseResponse(resp *http.Response) (DeepLResponse, error) {
-	var responseJson DeepLResponse
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
-		return responseJson, err
-	}
-	err = json.Unmarshal(body, &responseJson)
-	if err != nil {
-		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
-		return responseJson, err
-	}
-	return responseJson, err
-}
-
-func GetEndpoint(IsPro bool) string {
-	if IsPro {
-		return "https://api.deepl.com/v2/translate"
-	}
-	return "https://api-free.deepl.com/v2/translate"
+	return "https://api-free.deepl.com/v2"
 }

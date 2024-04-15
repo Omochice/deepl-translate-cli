@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE story [
+	<!ELEMENT story (title, body) >
+	<!ELEMENT title (#PCDATA) >
+	<!ELEMENT body (par)* >
+	<!ELEMENT par (#PCDATA | italic | speak )* >
+	<!ELEMENT italic (#PCDATA) >
+	<!ELEMENT speak (#PCDATA) >
+]>
+<story>
+	<title>The Peculiar Adventures of Sir Fluffington and the Quantum Teapot</title>
+	<body>
+		<par>In the quaint village of Bumbleberry, Sir Fluffington, a dapper hedgehog with a penchant for solving riddles, embarked on an improbable quest. Armed with a rusty teaspoon and a pocket-sized quantum teapot, he set out to unravel the mysteries of interdimensional biscuit crumbs.</par>
+		<par> His faithful sidekick, Professor Whiskerfluff, a perspicacious tabby cat, rode shotgun atop a levitating cucumber. Together, they navigated wormholes made of rainbow floss, dodging existential squirrels and befriending sentient marshmallow clouds.</par>
+		<par>Their mission? To locate the elusive <italic>“Eureka Biscuit,”</italic> rumored to grant omniscience and a lifetime supply of crumpets.</par>
+		<par>Alas, the teapot malfunctioned, and they found themselves in a parallel universe where socks had feelings and gravity whispered limericks.</par>
+		<par>Undeterred, Sir Fluffington adjusted his monocle, patted the cucumber for luck, and declared, <speak>“Onward, my dear Whiskerfluff! Let us sally forth into the quizzical unknown!”</speak></par>
+	</body>
+</story>
