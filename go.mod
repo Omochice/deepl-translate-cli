@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/lmorg/readline v0.0.0-20210316231630-be4b7d79fc3a
 	github.com/mattn/go-isatty v0.0.20
-	github.com/urfave/cli/v2 v2.27.1
+	github.com/urfave/cli/v2 v2.27.2
 )
 
 require (
