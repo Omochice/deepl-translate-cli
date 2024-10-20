@@ -4,6 +4,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.4 h1:wfIWP927BUkWJb2NmU/kNDYIBTh/ziUX91+lV
 github.com/cpuguy83/go-md2man/v2 v2.0.4/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/lmorg/readline v0.0.0-20210316231630-be4b7d79fc3a h1:xiaNGfMrhqdK89RvLnc6WAe4Pe/HKaluZmipsYF3E0o=
 github.com/lmorg/readline v0.0.0-20210316231630-be4b7d79fc3a/go.mod h1:DidBcghSSS00hj06CkehMGDhZ/25vZDdydkeTVUy6lY=
+github.com/lmorg/readline v0.0.0-20241020002248-f0c0aa7155a7 h1:z2hrqx2hNA5trZLN9pJVZlG6JGdCRf/gzDX4aKBsnzI=
+github.com/lmorg/readline v0.0.0-20241020002248-f0c0aa7155a7/go.mod h1:LEgVDjzp/bHdvBd8Urqbtv1UQNYsluOKrLPOzl+l+0U=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf35Ld67mk=
