@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Omochice/deepl-translate-cli/deepl"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/lmorg/readline"
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v2"
@@ -201,6 +202,9 @@ func main() {
 	// Set up the version/runtime/debug-related variables, and cache them:
 	initVersionInfo()
 
+	// Note that we are using godotenv/autoload to automatically retrieve .env
+	// and merge with the existing environment.
+
 	// Test if the authentication can work or not, depending if we got the token
 	// set as an environment variable.
 	deeplToken, ok := os.LookupEnv("DEEPL_TOKEN")
@@ -252,7 +256,7 @@ func main() {
 				Email: "gwyneth.llewelyn@gwynethllewelyn.net",
 			},
 		},
-		Copyright: "© 2021-2024 by Omochice. All rights reserved. Freely distributed under a MIT license.\nThis software is not affiliated nor endorsed by DeepL SE.",
+		Copyright: fmt.Sprintf("© 2021-%d by Omochice. All rights reserved. Freely distributed under a MIT license.\nThis software is not affiliated nor endorsed by DeepL SE.", time.Now().Year()),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "source_lang",

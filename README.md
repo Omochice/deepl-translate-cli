@@ -32,6 +32,7 @@ go install github.com/Omochice/deepl-translate-cli@latest
     ```console
     export DEEPL_TOKEN=<YOUR DEEPL API TOKEN>
     ```
+	If you prefer, you can also use a `.env` file to store your token.
 
 3. On the first run, if `$HOME/.config/deepl-translate-cli/setting.json` does not exist, it gets automatically created.
 
