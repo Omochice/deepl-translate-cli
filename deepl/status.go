@@ -51,6 +51,7 @@ type DeepLLanguagesResponse struct {
 }
 
 // Retrieve languages currently supported for translation, either as source or target language, respectively.
+// TODO(gwyneth): Cache the results!
 func (c *DeepLClient) Languages() (string, error) {
 	params := url.Values{}
 	params.Add("auth_key", c.AuthKey)
