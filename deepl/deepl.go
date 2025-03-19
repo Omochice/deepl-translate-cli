@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 type DeepL interface {
@@ -39,6 +40,10 @@ type Translated struct {
 
 // API call to translate text from sourceLang to targetLang.
 func (c *DeepLClient) Translate(text string) ([]string, error) {
+	// Do some cleanup to avoid doing all the work for a string only with spacs.
+	// As suggested by @coderabbitai (gwyneth 20250319)
+	text = strings.TrimSpace(text)
+
 	// @coderabbitai suggested to test for `text` being empty.
 	// This should _not_ happen but it's nevertheless a good idea! (gwyneth 20240412)
 	if len(text) == 0 {
