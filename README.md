@@ -32,7 +32,7 @@ go install github.com/Omochice/deepl-translate-cli@latest
     ```console
     export DEEPL_TOKEN=<YOUR DEEPL API TOKEN>
     ```
-	If you prefer, you can also use a `.env` file to store your token.
+	If you prefer, you can also use a `.env` file to store your token; just make sure that file has limited reading permissions and is _never_ exported via Git by mistake!
 
 3. On the first run, if `$HOME/.config/deepl-translate-cli/setting.json` does not exist, it gets automatically created.
 
@@ -64,7 +64,7 @@ go install github.com/Omochice/deepl-translate-cli@latest
 
 -   If you are a Pro plan user, switch to the correct endpoint URL with the `--pro` flag.
 
-    _**Note**: This feature has not been tested, because the developers only have a free plan._
+    _**Note**: This feature has not been tested because the developers only have a free plan._
 
     ```console
     cat <text.txt> | deepl-translate-cli --pro
@@ -79,9 +79,9 @@ go install github.com/Omochice/deepl-translate-cli@latest
 
 -   `deepl-translate-cli usage` which will query DeepL to return the number of characters still available for translations.
 -   `deepl-translate-cli languages` will show the languages currently supported by DeepL. By default, only the _source_ languages are listed; with the `--type target` flag, it will also show those languages (and variants) that are available as translation targets.
--   `deepl-translate-cli glossary-language-pairs` retrieves the list of language pairs supported by the glossary feature. Right now, it only does that — you cannot use glossaries yet.
+-   `deepl-translate-cli glossary-language-pairs` retrieves the list of language pairs supported by the glossary feature. Currently, it only does that — you cannot use glossaries yet.
 
-DeepL is also able to translate structured text, i.e. text inside HTML or XML tags. This requires using a few more parameters; see `./deepl-translate-cli translate --help` for a list of all the options. While all are supported and sent to DeepL for processing, there are many possible combinations (some of which make no sense) which haven't been thoroughly tested.
+DeepL can also translate structured text, i.e. text inside HTML or XML tags. This requires using a few more parameters; see `./deepl-translate-cli translate --help` for a list of all the options. While all are supported and sent to DeepL for processing, there are many possible combinations (some of which make no sense) which haven't been thoroughly tested.
 
 ## Shell autocompletion (⚠️ experimental)
 
