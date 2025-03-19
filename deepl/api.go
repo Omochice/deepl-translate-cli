@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 // Generic API call, takes method, URL parameters and a JSON object to fill,
@@ -26,7 +27,10 @@ func (c *DeepLClient) apiCall(method string, params url.Values, jsonObject any) 
 
 	// http.PostForm() unfortunately doesn't allow us to set headers, and we need to send the authorization
 	// in the headers, not in the body... (gwyneth 20231104)
-	client := &http.Client{}
+	// @coderabbitai suggests setting a timeout; makes sense! (gwyneth 20250419)
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	req, err := http.NewRequest(method, c.Endpoint, strings.NewReader(params.Encode()))
 	if err != nil {
 		return err
