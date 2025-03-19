@@ -8,6 +8,7 @@ import (
 	"net/url"
 )
 
+// Parsed usage response as sent by DeepL after a 'usage' request.
 type DeepLUsageResponse struct {
 	CharacterCount		int	`json:"character_count,omitempty"`// Characters translated so far in the current billing period.
 	CharacterLimit		int	`json:"character_limit,omitempty"`// Current maximum number of characters that can be translated per billing period.
@@ -17,8 +18,7 @@ type DeepLUsageResponse struct {
 	TeamDocumentCount	int	`json:"team_document_count,omitempty"` // Current maximum number of documents that can be translated by the team per billing period.
 }
 
-// Check Usage and Limits —
-// Retrieve usage information within the current billing period together with the corresponding account limits.
+// Check usage and limits, retrieving usage information within the current billing period together with the corresponding account limits.
 func (c *DeepLClient) Usage() (string, error) {
 	params := url.Values{}
 	params.Add("auth_key", c.AuthKey)
@@ -30,6 +30,7 @@ func (c *DeepLClient) Usage() (string, error) {
 		return "", err
 	}
 
+	// TODO(gwyneth): check for invalid results (i.e. zero or negative), possibly using `go-playground/validator`, and display specific warnings in those cases, e.g. "character limit reached and so forth" (gwyneth 20250419)
  	return fmt.Sprintf(
 		"Character Count: %d; Character Limit: %d; Document Limit: %d; Document Count: %d; Team Document Limit: %d; Team Document Count: %d.",
 		resp.CharacterCount,
@@ -49,8 +50,7 @@ type DeepLLanguagesResponse struct {
 	SupportsFormality	bool	`json:"supports_formality"`
 }
 
-// Retrieve Supported Languages —
-// Retrieve the list of languages that are currently supported for translation, either as source or target language, respectively.
+// Retrieve languages currently supported for translation, either as source or target language, respectively.
 func (c *DeepLClient) Languages() (string, error) {
 	params := url.Values{}
 	params.Add("auth_key", c.AuthKey)
@@ -73,6 +73,7 @@ func (c *DeepLClient) Languages() (string, error) {
 	// Currently, the only use case for this function is inside a CLI, where the human reader
 	// will very likely prefer to read unstructured (but pretty-printed) language pairs...
 	// (gwyneth 20230413)
+	// Furthermore, this is a prime candidate for caching! (gwyneth 20250419)
 	var r string
 	for _, lang := range langs {
 		r += lang.Language + ": " + lang.Name
@@ -96,8 +97,7 @@ type GlossaryPair struct {
 	TargetLang string `json:"target_lang"`
 }
 
-// List language pairs supported by glossaries —
-// Retrieve the list of language pairs supported by the glossary feature.
+// List language pairs supported by glossaries.
 func (c *DeepLClient) GlossaryLanguagePairs() (string, error) {
 	params := url.Values{}
 	params.Add("auth_key", c.AuthKey)
