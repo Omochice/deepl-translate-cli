@@ -80,6 +80,8 @@ func TestExists(t *testing.T) {
 		t.Errorf("Exists should return true for existing file: %s", tempFile.Name())
 	}
 
+	defer os.Remove(tempFile.Name()) // Clean up after the test
+
 	// Test with a file that does not exist
 	nonExistentFile := filepath.Join(os.TempDir(), "non_existent_file.txt")
 	if Exists(nonExistentFile) {
