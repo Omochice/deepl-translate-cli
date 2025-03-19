@@ -199,8 +199,13 @@ func main() {
 	// DeepL Token, usually coming from the environmant variable `DEEPL_TOKEN`.
 	var deeplToken string
 
-	// Set up the version/runtime/debug-related variables, and cache them:
-	initVersionInfo()
+	// Set up the version/runtime/debug-related variables, and cache them.
+	// @coderabbitai found out that the return cod wasn't being checked. (gwyneth 20250419)
+	if err := initVersionInfo(); err != nil {
+	    fmt.Fprintf(os.Stderr, "Failed to initialize version info: %v\n", err)
+		// ... however, we just emit an error. @coderabbitai suggests an os.Exit(1), but I think
+		// that's overkill. (gwyneth 20250419)
+	}
 
 	// Note that we are using godotenv/autoload to automatically retrieve .env
 	// and merge with the existing environment.
