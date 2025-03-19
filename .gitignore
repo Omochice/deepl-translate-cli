@@ -32,28 +32,23 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-# Stuff from the Nova editor
+# Avoid storing on the Git repo the local environment of the Nova editor
+# (only exists for macOS)
 .nova
-node_modules
-package.json
-package-lock.json
-.eslintrc.yml
 .prettierrc.json
+
+# Never push .env to the Git repo!
 .env
 
-#
-logs
-testdata
-
+# Potential results from deep tests
 profile.out
 coverage.html
 coverage.txt
 delay.txt
-
 *.log
 
 # executables
 deepl-translate-cli
 
-# originally by @Omochice
+# originally excluded by @Omochice
 dist/
