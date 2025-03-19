@@ -12,11 +12,11 @@ jobs:
       - name: Git Checkout Go Module
         uses: actions/checkout@v4
       - name: Set up go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: stable
           check-latest: true
       - name: Dependencies
         run: go get -v -t -d ./...
       - name: Go test
-        run: go test -v -timeout 30m ./...
+        run: go test -v -timeout 5m ./...
