@@ -67,9 +67,11 @@ func validateResponse(resp *http.Response) error {
 		// NOTE: on the following code, @Omochice opted for skipping the traditional JSON object struct,
 		// going directly for the semi-raw map[string]interface{} reply instead. (gwyneth 20231103)
 		e := json.NewDecoder(resp.Body).Decode(&data)
+		resp.Body.Close()	// close the body
 		if e != nil {
-			// Added the response body as suggested by @coderabbitai
-			return fmt.Errorf("%s, JSON decoding error was: %s [data received: %v]", baseErrorText, e, resp.Body)
+			// Removed the response body as suggested by @coderabbitai, since the io.Reader will have been
+			// consumed anyway, and there would be nothing left to print, except perhaps the pointer (gwyneth 20250419)
+			return fmt.Errorf("%s, JSON decoding error was: %s", baseErrorText, e)
 		} else {
 			return fmt.Errorf("%s, %s", baseErrorText, data["message"])
 		}
