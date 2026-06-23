@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Omochice/deepl-translate-cli/deepl"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/lmorg/readline"
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v2"
@@ -198,8 +199,16 @@ func main() {
 	// DeepL Token, usually coming from the environmant variable `DEEPL_TOKEN`.
 	var deeplToken string
 
-	// Set up the version/runtime/debug-related variables, and cache them:
-	initVersionInfo()
+	// Set up the version/runtime/debug-related variables, and cache them.
+	// @coderabbitai found out that the return cod wasn't being checked. (gwyneth 20250419)
+	if err := initVersionInfo(); err != nil {
+	    fmt.Fprintf(os.Stderr, "Failed to initialize version info: %v\n", err)
+		// ... however, we just emit an error. @coderabbitai suggests an os.Exit(1), but I think
+		// that's overkill. (gwyneth 20250419)
+	}
+
+	// Note that we are using godotenv/autoload to automatically retrieve .env
+	// and merge with the existing environment.
 
 	// Test if the authentication can work or not, depending if we got the token
 	// set as an environment variable.
@@ -252,7 +261,7 @@ func main() {
 				Email: "gwyneth.llewelyn@gwynethllewelyn.net",
 			},
 		},
-		Copyright: "© 2021-2024 by Omochice. All rights reserved. Freely distributed under a MIT license.\nThis software is not affiliated nor endorsed by DeepL SE.",
+		Copyright: fmt.Sprintf("© 2021-%d by Omochice. All rights reserved. Freely distributed under a MIT license.\nThis software is not affiliated nor endorsed by DeepL SE.", time.Now().Year()),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "source_lang",

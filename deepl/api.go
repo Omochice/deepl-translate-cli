@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 // Generic API call, takes method, URL parameters and a JSON object to fill,
@@ -26,7 +27,10 @@ func (c *DeepLClient) apiCall(method string, params url.Values, jsonObject any) 
 
 	// http.PostForm() unfortunately doesn't allow us to set headers, and we need to send the authorization
 	// in the headers, not in the body... (gwyneth 20231104)
-	client := &http.Client{}
+	// @coderabbitai suggests setting a timeout; makes sense! (gwyneth 20250419)
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	req, err := http.NewRequest(method, c.Endpoint, strings.NewReader(params.Encode()))
 	if err != nil {
 		return err
@@ -63,9 +67,12 @@ func validateResponse(resp *http.Response) error {
 		// NOTE: on the following code, @Omochice opted for skipping the traditional JSON object struct,
 		// going directly for the semi-raw map[string]interface{} reply instead. (gwyneth 20231103)
 		e := json.NewDecoder(resp.Body).Decode(&data)
+		defer resp.Body.Close()	// close the body
 		if e != nil {
-			// Added the response body as suggested by @coderabbitai
-			return fmt.Errorf("%s, JSON decoding error was: %s [data received: %v]", baseErrorText, e, resp.Body)
+			// Removed the response body as suggested by @coderabbitai, since the io.Reader will have been
+			// consumed anyway, and there would be nothing left to print, except perhaps the pointer (gwyneth 20250319)
+
+			return fmt.Errorf("%s, JSON decoding error was: %s", baseErrorText, e)
 		} else {
 			return fmt.Errorf("%s, %s", baseErrorText, data["message"])
 		}

@@ -79,6 +79,7 @@ func TestExists(t *testing.T) {
 	if !Exists(tempFile.Name()) {
 		t.Errorf("Exists should return true for existing file: %s", tempFile.Name())
 	}
+
 	defer os.Remove(tempFile.Name()) // Clean up after the test
 
 	// Test with a file that does not exist
